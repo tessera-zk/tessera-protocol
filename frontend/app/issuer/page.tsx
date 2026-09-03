@@ -22,7 +22,8 @@ import { currentWalletAddress } from "@/lib/wallet";
 import { submitAttestationWithWallet } from "@/lib/walletSubmit";
 
 type Step = { label: string; state: "pending" | "active" | "done" | "error" };
-const TREASURY_HOLDER = "GBKY7FXTESEV6ON5FGMKOIB57OFFAXQT2BMBE2KEHYQPRAT4JQASNUJC";
+// Fresh Tessera treasury holder (tessera-treasury, testnet). Replaces legacy zk-reserve address.
+const TREASURY_HOLDER = "GDYNFRF3FHYBX42UHYCWGFJ2MFXHZJIXBLII7TQU5YOM6ICTKZPOMKCP";
 
 const STEP_LABELS = [
   "Build commitment tree (Poseidon / BN254)",

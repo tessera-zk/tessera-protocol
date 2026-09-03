@@ -37,7 +37,8 @@ export const NETWORK_PASSPHRASE = Networks.TESTNET;
 
 // Placeholder source for read-only simulations (a real, funded testnet account;
 // simulation ignores its sequence number). Public key only, never a secret.
-const READ_SOURCE = "GBZK7Z6DMDBVFOURA76RXRQKPIHXTJFGN6CVRMU3J6ZE55YCZBHG3XG2";
+// Fresh Tessera deployer (tessera-deployer, testnet).
+const READ_SOURCE = "GC4I47VGLMTXPA6FK3UJYHDPJK57SZGRFBDQVFVYGRVG7Y3GBDOYAQA3";
 
 export function explorerTxUrl(hash: string): string {
   return `https://stellar.expert/explorer/testnet/tx/${hash}`;
