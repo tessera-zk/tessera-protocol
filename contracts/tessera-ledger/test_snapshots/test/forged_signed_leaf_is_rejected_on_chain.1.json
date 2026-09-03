@@ -58,12 +58,12 @@
               "function_name": "submit_attestation",
               "args": [
                 {
-                  "bytes": "24a16dda460f3aa53d7cb2ee149af81e868712b8b5c4d344e102c3b6f9334cba1742d1f8870851ec04bc6ed210cdf2151064020be748181f46bc04f5e9ed264d250f3d134febde8d13c207352383395bec76cb980e411f7a83a394f548a8ef8602b11391a7f125db79835f2b7aeb8daa4d307badba238b26bf96dfa8d1ccecd516c4f04358cd6c49de3e7a49f2c4d5738b1152e1fc5c8df20377e7c6abcfecf308d63363b0414f5db6273e19d003182f8b0f874e70eb55967fcae1d1b0c2d70e113cc9c4d613a498188b1f2887f3ef84da189fab1cc10d2d3e525ede226653f60b0da7c5ebd8ed3d3f61b873ecf427caae0b33f076d2319243581ad820729907"
+                  "bytes": "28c411e8654a35babe2e03203ec9c1f41331cb090d96ef11797a8f493eeb5fc32e74e035f0b03562dd2a510b642b1ec8dbcf40cecea00535e383b8555c7926580b41e3a8e3f81f1678eede805ae78f396875c50c57de71252529a38e4856bee727019228c87d6b0164e50fff281e31b7932c1d09a4195dbbcfa23ea1b1c0bdb0264b45b089c25278051743969e00b5f9dd9c2fe2512ad1bcb9e5e32c809c2de226d1acc28994cdc25c1239d703ffd63598598584ea717126750475214dcabbf21f6e318c94ff184e8bdf11f16766d7e265d59cb2dea358f222fab6dcce1265aa26ba69b4d5c0b8d5be2d89590e07b8bdf2bf8a81fe58c48e452c9d85956bc01c"
                 },
                 {
                   "vec": [
                     {
-                      "bytes": "13dc2c5ceb42ffbe76f26cec92c4e67a7014d70fe0da92068eb1da287b728260"
+                      "bytes": "1a0ce966a3b84bb95875cfe2165cead14f408de2a7bc2c542377cfea9d088ade"
                     },
                     {
                       "bytes": "0000000000000000000000000000000000000000000000000000000000006d60"
@@ -283,7 +283,7 @@
                       "symbol": "root_hash"
                     },
                     "val": {
-                      "bytes": "13dc2c5ceb42ffbe76f26cec92c4e67a7014d70fe0da92068eb1da287b728260"
+                      "bytes": "1a0ce966a3b84bb95875cfe2165cead14f408de2a7bc2c542377cfea9d088ade"
                     }
                   },
                   {
@@ -323,7 +323,7 @@
                     "symbol": "SeenRoot"
                   },
                   {
-                    "bytes": "13dc2c5ceb42ffbe76f26cec92c4e67a7014d70fe0da92068eb1da287b728260"
+                    "bytes": "1a0ce966a3b84bb95875cfe2165cead14f408de2a7bc2c542377cfea9d088ade"
                   }
                 ]
               },
