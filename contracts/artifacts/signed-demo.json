@@ -1,0 +1,104 @@
+{
+  "note": "UPGRADE 1 signed-leaf demo. ed25519 (Stellar-key curve) signed liability leaves; verified on-chain by register_signed_leaves / verify_signed_claim.",
+  "depth": 4,
+  "honest": {
+    "rootHash_dec": "8982956659263608426340918601656181500249731002240000209588980218933697217120",
+    "totalLiabilities": "28000",
+    "reserves": "30000"
+  },
+  "omitted": {
+    "rootHash_dec": "13273105360663407883689736830456223001250444119359597701040275241735892121547",
+    "totalLiabilities": "20000",
+    "reserves": "30000",
+    "dropped_user": "C",
+    "dropped_index": 2
+  },
+  "inclusion_user": "C",
+  "inclusion_leaf_commitment_dec": "16317390291673197189920398533962504297599965077989238712924348572089651807678",
+  "epoch0_signed_leaves": [
+    {
+      "name": "A",
+      "pubkey_hex": "692cb1ff96a9e9cdc6d9d61d4317ef3b48ce0a1b35f803a195adbac9e1bd8c94",
+      "balance": "5000",
+      "nonce": "1000",
+      "leaf_commitment_hex": "04c2ea97b756c83ab008b5053db36f2eb7ef04456040be8b4f5eb8ab9e2eac0f",
+      "leaf_commitment_dec": "2153638823805017324430790048252250791339332737885669793287890217108320988175",
+      "sig_hex": "8f7d7348bd8394bc8c761cd09bb6931f0632fae44a432d42597bbe5b1318174ce7a77cfc97340ec6d673010d3e82b426c62c0c455cfb5003a3d37679292b5c0d"
+    },
+    {
+      "name": "B",
+      "pubkey_hex": "348f4842b337c1db33f1d0dbc21bd4ea352407206b3843347f85c7a2dc43762d",
+      "balance": "12000",
+      "nonce": "1001",
+      "leaf_commitment_hex": "08e5e0851d407a4a994aa9e5fb858dcc1d8e6dca501d27847f18769cac0e551c",
+      "leaf_commitment_dec": "4024660346435549981795572654002725169891609538566990426060920484037496034588",
+      "sig_hex": "b740dac9b378dd05a79cfbe92a5029cb4bb4e1a57dde6b1f45e2c03ae3d95b01ff0e7c1c0f46a2894b992f330788cfaa0086b7a88636fff4e10b803849cb9209"
+    },
+    {
+      "name": "C",
+      "pubkey_hex": "4a2c0488d880d38b85271cd51bca4902d1574a21e08e4abd77628bec71221173",
+      "balance": "8000",
+      "nonce": "1002",
+      "leaf_commitment_hex": "241350cc549609bbce9f4821993c8b0342b040b64243e671c23c748a8e3fc5be",
+      "leaf_commitment_dec": "16317390291673197189920398533962504297599965077989238712924348572089651807678",
+      "sig_hex": "b452b0e69bec367a104e0d3b24b4bc4691a83b62cde37fcb0bfb74e6efa8a8909cc320123cc5ba0489d11ddb0c223ac8be5847c4b41b6da4d9ac57fd89b9b90b"
+    },
+    {
+      "name": "D",
+      "pubkey_hex": "5b8f894ff7e4635a57b5c45aa0c61760bb42a4b0e90ccc969f5bce3d6a819a0b",
+      "balance": "3000",
+      "nonce": "1003",
+      "leaf_commitment_hex": "0644214f2ca9f6f3ffed91f21b013d42379cd5b98ac5d5d15db1aea423c27869",
+      "leaf_commitment_dec": "2834252584073419497490421399100184782544892057900619546349480713080535152745",
+      "sig_hex": "929187550d7f17942321b4ea604f9066e464edf49faaa947f906261ba91e2666db7fabe678c8e69e069dd84639b6d7ec1f25b7fa755e13c60743390eb05ecb09"
+    }
+  ],
+  "epoch1_signed_leaves": [
+    {
+      "name": "A",
+      "pubkey_hex": "692cb1ff96a9e9cdc6d9d61d4317ef3b48ce0a1b35f803a195adbac9e1bd8c94",
+      "balance": "5000",
+      "nonce": "1000",
+      "leaf_commitment_hex": "04c2ea97b756c83ab008b5053db36f2eb7ef04456040be8b4f5eb8ab9e2eac0f",
+      "leaf_commitment_dec": "2153638823805017324430790048252250791339332737885669793287890217108320988175",
+      "sig_hex": "312bee09d3a59b1defde25ea84566cbc794599dbdc144df2ebae7b98706e4411b993a38fee5fa19a60e8f9e3783e43797019d181492b0b694ce539414bb1c40d"
+    },
+    {
+      "name": "B",
+      "pubkey_hex": "348f4842b337c1db33f1d0dbc21bd4ea352407206b3843347f85c7a2dc43762d",
+      "balance": "12000",
+      "nonce": "1001",
+      "leaf_commitment_hex": "08e5e0851d407a4a994aa9e5fb858dcc1d8e6dca501d27847f18769cac0e551c",
+      "leaf_commitment_dec": "4024660346435549981795572654002725169891609538566990426060920484037496034588",
+      "sig_hex": "45f820c57bd027ad4db65c177987aec58b5413060bd490ffee3e777b8e0ad4191cc7e6e0f73b62c60d53d38b973b612ff06f4580839318c6b5f393348979aa02"
+    },
+    {
+      "name": "C",
+      "pubkey_hex": "4a2c0488d880d38b85271cd51bca4902d1574a21e08e4abd77628bec71221173",
+      "balance": "8000",
+      "nonce": "1002",
+      "leaf_commitment_hex": "241350cc549609bbce9f4821993c8b0342b040b64243e671c23c748a8e3fc5be",
+      "leaf_commitment_dec": "16317390291673197189920398533962504297599965077989238712924348572089651807678",
+      "sig_hex": "d1cde0d7a83d2ee01b3182d4bfb635739791de7eb3003a95bf4426f8c884179302a0304ecffe0ed8a3c0ce8d4322e7bc733909c5a97d3d2e25b830b04e37660d"
+    },
+    {
+      "name": "D",
+      "pubkey_hex": "5b8f894ff7e4635a57b5c45aa0c61760bb42a4b0e90ccc969f5bce3d6a819a0b",
+      "balance": "3000",
+      "nonce": "1003",
+      "leaf_commitment_hex": "0644214f2ca9f6f3ffed91f21b013d42379cd5b98ac5d5d15db1aea423c27869",
+      "leaf_commitment_dec": "2834252584073419497490421399100184782544892057900619546349480713080535152745",
+      "sig_hex": "25e88f675a72ad923fd373e92f858ebed364ee599f180432eab8eb6bb7923f36419ee4f8bc330e993aca956b87bca4d898b7a9adf76c5219db79230ea2964809"
+    }
+  ],
+  "forged_leaf": {
+    "name": "C",
+    "pubkey_hex": "4a2c0488d880d38b85271cd51bca4902d1574a21e08e4abd77628bec71221173",
+    "balance": "8000",
+    "nonce": "1002",
+    "leaf_commitment_hex": "241350cc549609bbce9f4821993c8b0342b040b64243e671c23c748a8e3fc5be",
+    "leaf_commitment_dec": "16317390291673197189920398533962504297599965077989238712924348572089651807678",
+    "sig_hex": "b452b0e69bec367a104e0c3b24b4bc4691a83b62cde37fcb0bfb74e6efa8a8909cc320123cc5ba0489d11ddb0c223ac8be5847c4b41b6da4d9ac57fd89b9b90b",
+    "note": "user C epoch-0 signature with byte 10 flipped -> must be rejected on-chain"
+  }
+}

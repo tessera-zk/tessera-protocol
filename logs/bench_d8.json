@@ -1,0 +1,15 @@
+{
+  "depth": 8,
+  "accounts": 256,
+  "constraints": 337079,
+  "ptau_power": 19,
+  "ptau_mb": 576,
+  "zkey_mb": 148,
+  "compile_ms": 15219,
+  "setup_ms": 358749,
+  "witness_ms": 659,
+  "prove_ms": 29333,
+  "verify_ms": 980,
+  "proof_bytes": 806,
+  "verify_ok": true
+}

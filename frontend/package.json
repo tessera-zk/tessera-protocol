@@ -1,0 +1,32 @@
+{
+  "name": "tessera-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@creit.tech/stellar-wallets-kit": "^2.5.0",
+    "@stellar/stellar-sdk": "^16.0.1",
+    "@tailwindcss/oxide": "^4.3.2",
+    "buffer": "^6.0.3",
+    "circomlibjs": "0.1.7",
+    "next": "^15.5.4",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "server-only": "^0.0.1",
+    "snarkjs": "0.7.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/node": "22.10.7",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "tailwindcss": "^4.3.2",
+    "typescript": "5.7.3"
+  }
+}

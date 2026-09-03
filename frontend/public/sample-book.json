@@ -1,0 +1,119 @@
+{
+  "note": "Canonical demo commitment set. Reproduces the Merkle-sum root stored on-chain. acctCommit = Poseidon(acctId, salt); commitments are the private witnesses.",
+  "depth": 4,
+  "reserves": 189140,
+  "accounts": [
+    {
+      "index": 0,
+      "label": "Member Alpha",
+      "acctId": 100000,
+      "salt": 3735879680,
+      "balance": 1500
+    },
+    {
+      "index": 1,
+      "label": "Member Beta",
+      "acctId": 100001,
+      "salt": 3735879687,
+      "balance": 250
+    },
+    {
+      "index": 2,
+      "label": "Member Gamma",
+      "acctId": 100002,
+      "salt": 3735879694,
+      "balance": 9999
+    },
+    {
+      "index": 3,
+      "label": "Member Delta",
+      "acctId": 100003,
+      "salt": 3735879701,
+      "balance": 42
+    },
+    {
+      "index": 4,
+      "label": "Member Epsilon",
+      "acctId": 100004,
+      "salt": 3735879708,
+      "balance": 100000
+    },
+    {
+      "index": 5,
+      "label": "Member Zeta",
+      "acctId": 100005,
+      "salt": 3735879715,
+      "balance": 7
+    },
+    {
+      "index": 6,
+      "label": "Member Eta",
+      "acctId": 100006,
+      "salt": 3735879722,
+      "balance": 3333
+    },
+    {
+      "index": 7,
+      "label": "Member Theta",
+      "acctId": 100007,
+      "salt": 3735879729,
+      "balance": 88
+    },
+    {
+      "index": 8,
+      "label": "Member Iota",
+      "acctId": 100008,
+      "salt": 3735879736,
+      "balance": 12000
+    },
+    {
+      "index": 9,
+      "label": "Member Kappa",
+      "acctId": 100009,
+      "salt": 3735879743,
+      "balance": 640
+    },
+    {
+      "index": 10,
+      "label": "Member Lambda",
+      "acctId": 100010,
+      "salt": 3735879750,
+      "balance": 5
+    },
+    {
+      "index": 11,
+      "label": "Member Mu",
+      "acctId": 100011,
+      "salt": 3735879757,
+      "balance": 275
+    },
+    {
+      "index": 12,
+      "label": "Member Nu",
+      "acctId": 100012,
+      "salt": 3735879764,
+      "balance": 8800
+    },
+    {
+      "index": 13,
+      "label": "Member Xi",
+      "acctId": 100013,
+      "salt": 3735879771,
+      "balance": 1
+    },
+    {
+      "index": 14,
+      "label": "Member Omicron",
+      "acctId": 100014,
+      "salt": 3735879778,
+      "balance": 45000
+    },
+    {
+      "index": 15,
+      "label": "Member Pi",
+      "acctId": 100015,
+      "salt": 3735879785,
+      "balance": 2200
+    }
+  ]
+}

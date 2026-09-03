@@ -1,0 +1,30 @@
+# circuit build artifacts (regenerate with scripts/build.sh)
+node_modules/
+build/
+ptau/
+
+# Rust build artifacts
+contracts/target/
+**/target/
+
+# Next.js build artifacts
+frontend/.next/
+frontend/node_modules/
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# keep circuit-keys/ (vk + zkey) committed for the demo
+# keep logs/prove_run.log as captured evidence

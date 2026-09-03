@@ -1,0 +1,71 @@
+==> Regenerating in-circuit EdDSA inputs
+IN-CIRCUIT EdDSA signed-solvency inputs built.
+  root            = 16453874781692368755045274525839468949138322499981633725997713970156119111404
+  totalLiabilities= 28000  reserves= 30000
+  pubkeyHash      = 8569005608286294987933795951346734163133982047387452444819643042289074277997
+  wrote signed_solvency{,_omitted,_forged}.json, signed_inclusion.json, signed-incircuit.json
+
+==================================================================
+POSITIVE: honest signed book (4 in-circuit EdDSA sigs)  -- expect VERIFY
+==================================================================
+--- public signals (/Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/proofs/signed_solvency_public.json) ---
+[
+ "16453874781692368755045274525839468949138322499981633725997713970156119111404",
+ "28000",
+ "30000",
+ "8569005608286294987933795951346734163133982047387452444819643042289074277997",
+ "0"
+]
+[32;22m[INFO]  [39;1msnarkJS[0m: OK!
+RESULT: VERIFIED OK
+
+==================================================================
+POSITIVE: user C inclusion vs signed root  -- expect VERIFY
+==================================================================
+--- public signals (/Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/proofs/signed_inclusion_public.json) ---
+[
+ "16453874781692368755045274525839468949138322499981633725997713970156119111404",
+ "6383856779703082864844699237356177162867077430107016847133375326857961290867"
+]
+[32;22m[INFO]  [39;1msnarkJS[0m: OK!
+RESULT: VERIFIED OK
+
+==================================================================
+NEGATIVE: OMISSION: drop registered user C, keep published pubkeyHash  -- expect UNPROVABLE (pubkeyHash pin fails: tree key-set != registered set)
+==================================================================
+ERROR:  4 Error in template SignedSolvency_396 line: 135
+
+[31;22m[ERROR] [39;1msnarkJS[0m: Error: Error: Assert Failed. Error in template SignedSolvency_396 line: 135
+
+    at /Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:529:27
+    at Array.forEach (<anonymous>)
+    at WitnessCalculatorCircom2._doCalculateWitness (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:500:14)
+    at WitnessCalculatorCircom2.calculateWTNSBin (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:559:20)
+    at wtnsCalculate$1 (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:6100:28)
+    at async Object.wtnsCalculate [as action] (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:12925:5)
+    at async clProcessor (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:519:27)
+RESULT: REJECTED as expected (constraint unsatisfiable -> no proof exists)
+
+==================================================================
+NEGATIVE: FORGERY: flip a bit of user C's signature  -- expect UNPROVABLE (EdDSAPoseidonVerifier equality fails)
+==================================================================
+ERROR:  4 Error in template ForceEqualIfEnabled_167 line: 56
+Error in template EdDSAPoseidonVerifier_168 line: 117
+Error in template SignedSolvency_396 line: 81
+
+[31;22m[ERROR] [39;1msnarkJS[0m: Error: Error: Assert Failed. Error in template ForceEqualIfEnabled_167 line: 56
+Error in template EdDSAPoseidonVerifier_168 line: 117
+Error in template SignedSolvency_396 line: 81
+
+    at /Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:529:27
+    at Array.forEach (<anonymous>)
+    at WitnessCalculatorCircom2._doCalculateWitness (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:500:14)
+    at WitnessCalculatorCircom2.calculateWTNSBin (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:559:20)
+    at wtnsCalculate$1 (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:6100:28)
+    at async Object.wtnsCalculate [as action] (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:12925:5)
+    at async clProcessor (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:519:27)
+RESULT: REJECTED as expected (constraint unsatisfiable -> no proof exists)
+
+==================================================================
+SIGNED SUMMARY: pass=4 fail=0
+==================================================================

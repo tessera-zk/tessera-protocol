@@ -1,0 +1,83 @@
+==> [1/4] Compiling circuits (BN254, circom 2.2.3)
+[32mtemplate instances[0m: 156
+non-linear constraints: 9551
+linear constraints: 10960
+public inputs: 3
+private inputs: 32
+public outputs: 0
+wires: 20526
+labels: 31188
+[32mWritten successfully:[0m /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/solvency.r1cs
+[32mWritten successfully:[0m /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/solvency.sym
+[32mWritten successfully:[0m /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/solvency_js/solvency.wasm
+[32mEverything went okay[0m
+[32mtemplate instances[0m: 148
+non-linear constraints: 1527
+linear constraints: 2023
+public inputs: 2
+private inputs: 14
+public outputs: 0
+wires: 3560
+labels: 5574
+[32mWritten successfully:[0m /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/inclusion.r1cs
+[32mWritten successfully:[0m /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/inclusion.sym
+[32mWritten successfully:[0m /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/inclusion_js/inclusion.wasm
+[32mEverything went okay[0m
+==> [2/4] Powers of tau (BN254 Hermez, public phase-1)
+    downloading https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0  0 36.0M    0 83343    0     0  25721      0  0:24:30  0:00:03  0:24:27 25715  0 36.0M    0  350k    0     0  89081      0  0:07:04  0:00:04  0:07:00 89068  3 36.0M    3 1422k    0     0   269k      0  0:02:16  0:00:05  0:02:11  271k 14 36.0M   14 5357k    0     0   882k      0  0:00:41  0:00:06  0:00:35 1063k 35 36.0M   35 12.9M    0     0  1887k      0  0:00:19  0:00:07  0:00:12 2658k 61 36.0M   61 22.3M    0     0  2843k      0  0:00:12  0:00:08  0:00:04 4747k 89 36.0M   89 32.1M    0     0  3629k      0  0:00:10  0:00:09  0:00:01 6466k100 36.0M  100 36.0M    0     0  3909k      0  0:00:09  0:00:09 --:--:-- 8510k
+==> [3/4] Groth16 phase-2 setup + verification keys
+==> setup: solvency
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading r1cs
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading tauG1
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading tauG2
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading alphatauG1
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading betatauG1
+[32;22m[INFO]  [39;1msnarkJS[0m: Circuit hash: 
+		1715ad6f 7edbbe58 e158c64f b3637391
+		97176e58 c8fbe627 ba787a73 d1bd34ab
+		8f247c6b 0dd16b5d 1de90487 415fc3eb
+		3814594a 0f9425b9 9461bead de66b44f
+[32;22m[INFO]  [39;1msnarkJS[0m: Circuit Hash: 
+		1715ad6f 7edbbe58 e158c64f b3637391
+		97176e58 c8fbe627 ba787a73 d1bd34ab
+		8f247c6b 0dd16b5d 1de90487 415fc3eb
+		3814594a 0f9425b9 9461bead de66b44f
+[32;22m[INFO]  [39;1msnarkJS[0m: Contribution Hash: 
+		35664686 170fddd4 8253c565 785dd303
+		26349bfc dd1a26cc ddb3b5b0 deb32381
+		2d728f67 e0102574 9a61372e 9af77705
+		08ec4659 90b78348 33f361ea fe5a23a8
+[32;22m[INFO]  [39;1msnarkJS[0m: EXPORT VERIFICATION KEY STARTED
+[32;22m[INFO]  [39;1msnarkJS[0m: > Detected protocol: groth16
+[32;22m[INFO]  [39;1msnarkJS[0m: EXPORT VERIFICATION KEY FINISHED
+==> setup: inclusion
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading r1cs
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading tauG1
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading tauG2
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading alphatauG1
+[32;22m[INFO]  [39;1msnarkJS[0m: Reading betatauG1
+[32;22m[INFO]  [39;1msnarkJS[0m: Circuit hash: 
+		c01428c0 b23c2056 b7e23251 1ff2f5ba
+		267b6519 5843fb5c ad20c15c b066d09d
+		5f515e21 4110a1a5 9d1f9ada 6a5d09a5
+		ffbfb656 e4197527 78231b5a c3a7b54f
+[32;22m[INFO]  [39;1msnarkJS[0m: Circuit Hash: 
+		c01428c0 b23c2056 b7e23251 1ff2f5ba
+		267b6519 5843fb5c ad20c15c b066d09d
+		5f515e21 4110a1a5 9d1f9ada 6a5d09a5
+		ffbfb656 e4197527 78231b5a c3a7b54f
+[32;22m[INFO]  [39;1msnarkJS[0m: Contribution Hash: 
+		fcd63646 9e8ac5ad 18ba39c3 11233f21
+		02a7e79a 3980e8d4 7d8eba03 82a00865
+		a542b4cc 97364eb3 6f7496e6 099bea40
+		a642af01 8ec131ec 6a8cc0d4 6b656373
+[32;22m[INFO]  [39;1msnarkJS[0m: EXPORT VERIFICATION KEY STARTED
+[32;22m[INFO]  [39;1msnarkJS[0m: > Detected protocol: groth16
+[32;22m[INFO]  [39;1msnarkJS[0m: EXPORT VERIFICATION KEY FINISHED
+==> [4/4] Done. Artifacts:
+    wasm : /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/solvency_js/solvency.wasm , /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/build/inclusion_js/inclusion.wasm
+    zkey : /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/circuit-keys/solvency_final.zkey , /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/circuit-keys/inclusion_final.zkey
+    vkey : /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/circuit-keys/vk_solvency.json , /Users/kamal/Desktop/stellar/.claude/worktrees/agent-a45a1802b52b0466c/projects/zk-proof-of-reserves/circuit-keys/vk_inclusion.json

@@ -1,0 +1,15 @@
+{
+  "name": "tessera-circuits",
+  "version": "0.1.0",
+  "description": "Tessera ZK circuits (Circom + Groth16, BN254) for Stellar",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "prove": "bash scripts/prove.sh"
+  },
+  "dependencies": {
+    "circomlib": "2.0.5",
+    "circomlibjs": "^0.1.7"
+  }
+}

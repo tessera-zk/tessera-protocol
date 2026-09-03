@@ -1,0 +1,68 @@
+==> Regenerating Merkle-sum inputs
+Merkle-sum tree built. depth=4 leaves=16
+  rootHash         = 18476080664104167364283550003171561992385021811003715219434465972790703878135
+  totalLiabilities = 184140
+  reserves (valid) = 189140
+  leaf[5] commit   = 11921603012168625398316026633761621173591536483600465879340330893113484361710
+Wrote inputs to /Users/kamal/Desktop/stellar/projects/zk-proof-of-reserves/build/inputs
+
+===================================================================
+POSITIVE: solvency  (solvency_input.json)  -- expect proof to VERIFY
+===================================================================
+--- public signals (/Users/kamal/Desktop/stellar/projects/zk-proof-of-reserves/build/proofs/solvency_public.json) ---
+[
+ "18476080664104167364283550003171561992385021811003715219434465972790703878135",
+ "184140",
+ "189140"
+]
+[32;22m[INFO]  [39;1msnarkJS[0m: OK!
+RESULT: VERIFIED OK
+
+===================================================================
+POSITIVE: inclusion  (inclusion_input.json)  -- expect proof to VERIFY
+===================================================================
+--- public signals (/Users/kamal/Desktop/stellar/projects/zk-proof-of-reserves/build/proofs/inclusion_public.json) ---
+[
+ "18476080664104167364283550003171561992385021811003715219434465972790703878135",
+ "11921603012168625398316026633761621173591536483600465879340330893113484361710"
+]
+[32;22m[INFO]  [39;1msnarkJS[0m: OK!
+RESULT: VERIFIED OK
+
+===================================================================
+NEGATIVE: solvency  (solvency_insolvent.json)  -- expect REJECTION: totalLiabilities > reserves (insolvent)
+===================================================================
+ERROR:  4 Error in template Solvency_155 line: 88
+
+[31;22m[ERROR] [39;1msnarkJS[0m: Error: Error: Assert Failed. Error in template Solvency_155 line: 88
+
+    at /Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:529:27
+    at Array.forEach (<anonymous>)
+    at WitnessCalculatorCircom2._doCalculateWitness (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:500:14)
+    at WitnessCalculatorCircom2.calculateWTNSBin (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:559:20)
+    at wtnsCalculate$1 (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:6100:28)
+    at async Object.wtnsCalculate [as action] (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:12925:5)
+    at async clProcessor (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:519:27)
+RESULT: circuit REJECTED as expected (constraint unsatisfiable)
+
+===================================================================
+NEGATIVE: solvency  (solvency_negbalance.json)  -- expect REJECTION: leaf balance is field-negative (out of [0,2^64))
+===================================================================
+ERROR:  4 Error in template Num2Bits_0 line: 38
+Error in template Solvency_155 line: 44
+
+[31;22m[ERROR] [39;1msnarkJS[0m: Error: Error: Assert Failed. Error in template Num2Bits_0 line: 38
+Error in template Solvency_155 line: 44
+
+    at /Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:529:27
+    at Array.forEach (<anonymous>)
+    at WitnessCalculatorCircom2._doCalculateWitness (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:500:14)
+    at WitnessCalculatorCircom2.calculateWTNSBin (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/node_modules/circom_runtime/build/main.cjs:559:20)
+    at wtnsCalculate$1 (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:6100:28)
+    at async Object.wtnsCalculate [as action] (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:12925:5)
+    at async clProcessor (/Users/kamal/.nvm/versions/node/v23.10.0/lib/node_modules/snarkjs/build/cli.cjs:519:27)
+RESULT: circuit REJECTED as expected (constraint unsatisfiable)
+
+===================================================================
+SUMMARY: pass=4 fail=0
+===================================================================

@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Tessera design tokens.
+   Ink/Arctic: deep navy surface, teal→violet accent, calm institutional feel.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-bg: #070a12;
+  --color-surface: #0e1424;
+  --color-surface-elevated: #141d33;
+  --color-fg: #e8eefc;
+  --color-muted: #8b9bb5;
+  --color-faint: #5a6a8a;
+
+  --color-accent: #5be0c8;
+  --color-accent-bright: #7cf5e0;
+  --color-accent-dim: #3db8a0;
+  --color-accent2: #7c8cfd;
+  --color-accent2-bright: #a5b0ff;
+  --color-accent2-dim: #5a68d8;
+
+  --color-healthy: #34d399;
+  --color-danger: #f4536a;
+  --color-warn: #f0a92c;
+
+  --color-line: rgba(139, 155, 181, 0.12);
+  --color-line-strong: rgba(139, 155, 181, 0.22);
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+
+  --radius-xl: 14px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+}
+
+@layer base {
+  html {
+    background: var(--color-bg);
+    color-scheme: dark;
+  }
+  body {
+    background:
+      radial-gradient(900px 500px at 50% -10%, rgba(91, 224, 200, 0.06), transparent 60%),
+      radial-gradient(800px 400px at 100% 0%, rgba(124, 140, 253, 0.04), transparent 55%),
+      var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.011em;
+    min-height: 100vh;
+  }
+  ::selection {
+    background: rgba(91, 224, 200, 0.28);
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .tnum {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+  .card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+  }
+  .card-elevated {
+    background: rgba(20, 29, 51, 0.6);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-xl);
+  }
+  .hairline {
+    border-top: 1px solid var(--color-line);
+  }
+}
+
+/* focus ring, accessible */
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@layer components {
+  /* subtle mesh gradient behind hero */
+  .mesh-bg {
+    background-image:
+      radial-gradient(600px 400px at 20% 0%, rgba(91, 224, 200, 0.08), transparent 70%),
+      radial-gradient(500px 300px at 80% 100%, rgba(124, 140, 253, 0.06), transparent 65%);
+  }
+  /* card hover sheen */
+  .spot { position: relative; overflow: hidden; }
+  .spot::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background: radial-gradient(220px 180px at var(--mx, 50%) var(--my, 0%), rgba(91,224,200,0.1), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+  .spot:hover::after { opacity: 1; }
+  .accent-word {
+    background: linear-gradient(180deg, var(--color-accent-bright), var(--color-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .accent2-word {
+    background: linear-gradient(180deg, var(--color-accent2-bright), var(--color-accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* fine grid pattern for subtle sections */
+  .grid-pattern {
+    background-image:
+      linear-gradient(to right, rgba(139,155,181,0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(139,155,181,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .input-field {
+    width: 100%;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    color: var(--color-fg);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(91,224,200,0.15);
+  }
+  .input-field::placeholder {
+    color: var(--color-faint);
+  }
+}
+
+(End of file - total 157 lines)
