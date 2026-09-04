@@ -1,0 +1,22 @@
+name: docs
+on:
+  push:
+    paths: ["docs/**", "*.md", "frontend/README.md", "circuits/README.md"]
+  pull_request:
+    paths: ["docs/**", "*.md"]
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check docs cross-links resolve
+        run: |
+          node -e "
+          const fs=require('fs'),path=require('path');
+          const files=[...fs.readdirSync('docs').map(f=>'docs/'+f),'README.md','PRD.md','ARCHITECTURE.md','ADVANCED-STATUS.md','BENCHMARKS.md'];
+          let bad=0;
+          for(const f of files){const s=fs.readFileSync(f,'utf8');for(const m of s.matchAll(/\]\( *([^ )]+) *\)/g)){const t=m[1];if(/^https?:|#|mailto:/.test(t))continue;const p=path.normalize(path.join(path.dirname(f),t.split('#')[0]));if(!fs.existsSync(p)){console.error('BROKEN',f,'->',t);bad++;}}}
+          if(bad){process.exit(1)}else{console.log('docs links OK ('+files.length+' files)')}
+          "
+      - name: Forbid NEXT_PUBLIC secrets in docs
+        run: "! grep -rn 'NEXT_PUBLIC_.*SECRET\|NEXT_PUBLIC_TESSERA' docs/ README.md frontend/README.md 2>/dev/null || (echo 'secret hygiene violation' && exit 1)"
