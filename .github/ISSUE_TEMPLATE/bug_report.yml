@@ -1,0 +1,40 @@
+name: Bug report
+description: A circuit, contract, script, or frontend behavior that contradicts the docs
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. If this is a **ZK-soundness hole** (a way to forge
+        a proof, fake backing, or omit a member), do NOT detail the exploit here —
+        see `SECURITY.md` and open a minimal issue instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Command run, transaction or test that failed, and the exact error
+      placeholder: cargo test -p tessera-ledger ... FAILED ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did the docs promise?
+      description: Cite the doc + line or tx hash the behavior contradicts
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit / branch tested
+      placeholder: main @ <sha>, or branch name
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checks
+      options:
+        - label: I checked this is not a disclosed NOT-YET limitation (PRD.md / ADVANCED-STATUS.md)
+          required: true

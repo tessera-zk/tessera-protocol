@@ -1,0 +1,27 @@
+name: Roadmap task
+description: A NOT-YET item from PRD.md / ADVANCED-STATUS.md, or a hardening follow-up
+title: "[roadmap] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which NOT-YET item (or follow-up), and what this issue covers
+      placeholder: PRD NOT-YET #2 follow-up — ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable, checkable outcomes (tests, tx hashes, docs)
+    validations:
+      required: true
+  - type: textarea
+    id: nonegoals
+    attributes:
+      label: Explicit non-goals
+      description: What stays NOT-YET after this issue, to prevent overclaim
+    validations:
+      required: false

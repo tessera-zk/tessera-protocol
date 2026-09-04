@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Sensitive ZK-soundness report
+    url: https://github.com/tessera-zk/tessera-protocol/blob/main/SECURITY.md
+    about: Read the reporting policy first — minimal public details, private channel on request
