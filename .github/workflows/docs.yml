@@ -19,4 +19,5 @@ jobs:
           if(bad){process.exit(1)}else{console.log('docs links OK ('+files.length+' files)')}
           "
       - name: Forbid NEXT_PUBLIC secrets in docs
-        run: "! grep -rn 'NEXT_PUBLIC_.*SECRET\|NEXT_PUBLIC_TESSERA' docs/ README.md frontend/README.md 2>/dev/null || (echo 'secret hygiene violation' && exit 1)"
+        # SECRET suffix only: public client config (CONTRACT_ID, RPC_URL, ...) is fine.
+        run: "! grep -rn 'NEXT_PUBLIC_[A-Z0-9_]*SECRET' docs/ README.md frontend/README.md 2>/dev/null || (echo 'secret hygiene violation' && exit 1)"
