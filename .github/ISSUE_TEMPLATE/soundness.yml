@@ -1,0 +1,30 @@
+name: Sensitive soundness report
+description: Possible ZK-soundness hole — minimal details only, no exploit here
+title: "[soundness] possible issue — contact requested"
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Per `SECURITY.md`: describe the **area** (circuit / contract / setup /
+        oracle), **not** the exploit. A maintainer will arrange a private
+        channel. Never post a working forgery, private key, or secret here.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Circuit (solvency / signed / risk / inclusion / unified / keyed)
+        - Soroban contract
+        - Trusted setup / keys
+        - Oracle / reserves binding
+        - Frontend / secrets handling
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: One-paragraph summary (no exploit details)
+    validations:
+      required: true
