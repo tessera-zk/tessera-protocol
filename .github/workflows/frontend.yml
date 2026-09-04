@@ -11,7 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with: { node-version: 22 }
+      # Lockfile is npm-11-generated (utf-8-validate optional-dep recording);
+      # npm 10's `npm ci` rejects it, so pin the installer (verified locally).
+      - run: npm install -g npm@11
       - run: npm ci
       - run: npm run typecheck --if-present || npx tsc --noEmit
       - name: Secret hygiene gate

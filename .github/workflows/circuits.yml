@@ -12,10 +12,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci
+      - name: Install circom 2.2.3 (Rust binary, not the npm JS package)
+        run: |
+          curl -sL -o /tmp/circom https://github.com/iden3/circom/releases/download/v2.2.3/circom-linux-amd64
+          chmod +x /tmp/circom
+          sudo mv /tmp/circom /usr/local/bin/circom
+          circom --version
       - name: Compile solvency skeleton + templates (no ptau)
         run: |
-          npx circom --version || npm i -g circom
-          circom circuits/solvency.circom --r1cs --sym -o /tmp/ci-circuits || circom circuits/solvency.circom --r1cs --wasm --sym -o /tmp/ci-circuits
+          mkdir -p /tmp/ci-circuits
+          circom circuits/solvency.circom --r1cs --sym -o /tmp/ci-circuits
           circom circuits/unified_solvency.circom --r1cs --sym -o /tmp/ci-circuits
       - name: Input generators smoke
         run: |

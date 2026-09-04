@@ -5,7 +5,7 @@ import { aggregateReserves, type ReserveLeg } from "./stellar";
 
 export function assertSameUnit(legs: ReserveLeg[]): void {
   for (const leg of legs) {
-    if (leg.scaleNum !== 1 || leg.scaleDen !== 1) {
+    if (leg.scaleNum !== 1n || leg.scaleDen !== 1n) {
       throw new Error("NON_1TO1_LEG: only same-unit 1:1 legs are supported (Error #13)");
     }
   }
