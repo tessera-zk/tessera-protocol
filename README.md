@@ -131,7 +131,7 @@ trust model: [`contracts/M4-STATUS.md`](contracts/M4-STATUS.md).
 tests pass; both upgrades demonstrated on testnet with real tx hashes (honest
 signed-leaf attestation, member inclusion, forged-leaf rejection, provable omission,
 proof-of-control). Full design, every tx hash, the sharpened trust model and honest
-blockers: [`UPGRADES-STATUS.md`](UPGRADES-STATUS.md).
+blockers: [`ADVANCED-STATUS.md`](ADVANCED-STATUS.md).
 
 ## Layout
 
