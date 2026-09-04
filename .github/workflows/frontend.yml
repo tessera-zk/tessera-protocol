@@ -1,0 +1,18 @@
+name: frontend
+on:
+  push:
+    paths: ["frontend/**", ".github/workflows/frontend.yml"]
+  pull_request:
+    paths: ["frontend/**"]
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run typecheck --if-present || npx tsc --noEmit
+      - name: Secret hygiene gate
+        run: node ../scripts/check_secret_hygiene.js
