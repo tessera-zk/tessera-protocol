@@ -1,0 +1,24 @@
+name: circuits
+on:
+  push:
+    paths: ["circuits/**", "scripts/build*.sh", "scripts/gen_*.js", ".github/workflows/circuits.yml"]
+  pull_request:
+    paths: ["circuits/**", "scripts/build*.sh", "scripts/gen_*.js"]
+jobs:
+  compile-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - name: Compile solvency skeleton + templates (no ptau)
+        run: |
+          npx circom --version || npm i -g circom
+          circom circuits/solvency.circom --r1cs --sym -o /tmp/ci-circuits || circom circuits/solvency.circom --r1cs --wasm --sym -o /tmp/ci-circuits
+          circom circuits/unified_solvency.circom --r1cs --sym -o /tmp/ci-circuits
+      - name: Input generators smoke
+        run: |
+          node scripts/gen_input.js > /tmp/in.json
+          node scripts/gen_unified_input.js > /tmp/unified.json
+          node scripts/estimate_depth10.js
