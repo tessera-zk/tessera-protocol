@@ -1,0 +1,13 @@
+{
+  "name": "@tessera-zk/sdk",
+  "version": "0.1.0",
+  "description": "Client helpers for Tessera treasury attestations (reads + embeds, no secrets)",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./reads": "./src/reads.js",
+    "./embed": "./src/embed.js",
+    "./types": "./src/types.js"
+  }
+}
