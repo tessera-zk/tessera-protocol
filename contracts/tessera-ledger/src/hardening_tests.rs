@@ -53,3 +53,50 @@ fn all_ff_is_not_canonical() {
     let env = Env::default();
     assert!(!is_canonical_fr(&BytesN::from_array(&env, &[0xff; 32]))));
 }
+
+/// Documented error codes are stable: frontend maps, runbooks, and the audit
+/// log all key off these numbers. Any renumber needs a coordinated change.
+#[test]
+fn adjudicated_error_codes_are_stable() {
+    assert_eq!(Error::InvalidSolvencyProof as u32, 1);
+    assert_eq!(Error::RegisteredSetMismatch as u32, 10); // FIX 1 omission
+    assert_eq!(Error::BadReserveLeg as u32, 13); // FIX 2 same-unit
+    assert_eq!(Error::StaleEpoch as u32, 14); // FIX 4 replay
+    assert_eq!(Error::NonCanonicalSignal as u32, 16); // FIX 5 / M3
+    assert_eq!(Error::ReserveUnbacked as u32, 5);
+}
+
+/// Every discriminant in 1..=22 is used at most once (no silent aliasing
+/// between two error meanings).
+#[test]
+fn error_discriminants_are_unique() {
+    let codes = [
+        Error::InvalidSolvencyProof as u32,
+        Error::MalformedPublicInputs as u32,
+        Error::Insolvent as u32,
+        Error::NoAttestation as u32,
+        Error::ReserveUnbacked as u32,
+        Error::ReservesOutOfRange as u32,
+        Error::NotConfigured as u32,
+        Error::BadSignedLeaf as u32,
+        Error::EmptyRegistry as u32,
+        Error::RegisteredSetMismatch as u32,
+        Error::RegisteredSetNotSet as u32,
+        Error::NoReserveLegs as u32,
+        Error::BadReserveLeg as u32,
+        Error::StaleEpoch as u32,
+        Error::ReserveOverflow as u32,
+        Error::NonCanonicalSignal as u32,
+        Error::RootAlreadyAttested as u32,
+        Error::RegisteredSetFull as u32,
+        Error::CustomerAlreadyRegistered as u32,
+        Error::WeakAttestationDowngrade as u32,
+        Error::RiskPolicyTooWeak as u32,
+        Error::BadReserveToken as u32,
+    ];
+    let mut sorted = codes;
+    sorted.sort_unstable();
+    let before = sorted.len();
+    sorted.dedup();
+    assert_eq!(sorted.len(), before, "duplicate error discriminant");
+}
