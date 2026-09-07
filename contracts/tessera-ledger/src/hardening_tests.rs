@@ -100,3 +100,36 @@ fn error_discriminants_are_unique() {
     sorted.dedup();
     assert_eq!(sorted.len(), before, "duplicate error discriminant");
 }
+
+/// Public-signal-count constants match the circuits they serve. A mismatch
+/// here would verify proofs against the wrong arity (silent wrong-statement
+/// risk), so the coupling is pinned by test.
+#[test]
+fn signal_count_consts_match_circuits() {
+    assert_eq!(SOLVENCY_N_PUBLIC, 3); // [root, total, reserves]
+    assert_eq!(INCLUSION_N_PUBLIC, 2); // [root, leafCommitment]
+    assert_eq!(SIGNED_SOLVENCY_LEAVES, 4); // depth-2 demo: fixed member count
+    assert_eq!(SIGNED_SOLVENCY_N_PUBLIC, 4 + 2 * SIGNED_SOLVENCY_LEAVES); // 12
+    assert_eq!(SIGNED_SOLVENCY_N_PUBLIC, 12);
+    assert_eq!(RISK_SOLVENCY_N_PUBLIC, 5); // [root, total, reserves, conc, coll]
+}
+
+/// `ge_be` comparator edges: equal, just-below, just-above at the low byte,
+// plus a high-byte decision (lexicographic, big-endian).
+#[test]
+fn ge_be_edges() {
+    let env = Env::default();
+    let lo = |last: u8| -> BytesN<32> { bytes(&env, last) };
+    assert!(ge_be(&lo(0x05), &lo(0x05))); // equal
+    assert!(!ge_be(&lo(0x04), &lo(0x05))); // below
+    assert!(ge_be(&lo(0x06), &lo(0x05))); // above
+    let mut hi_a = [0u8; 32];
+    let mut hi_b = [0u8; 32];
+    hi_a[0] = 0x31;
+    hi_b[0] = 0x30;
+    hi_b[31] = 0xff; // low byte loses to high byte
+    assert!(ge_be(
+        &BytesN::from_array(&env, &hi_a),
+        &BytesN::from_array(&env, &hi_b)
+    ));
+}
