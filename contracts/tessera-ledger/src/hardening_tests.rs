@@ -51,7 +51,7 @@ fn modulus_itself_is_not_canonical() {
 #[test]
 fn all_ff_is_not_canonical() {
     let env = Env::default();
-    assert!(!is_canonical_fr(&BytesN::from_array(&env, &[0xff; 32]))));
+    assert!(!is_canonical_fr(&BytesN::from_array(&env, &[0xff; 32])));
 }
 
 /// Documented error codes are stable: frontend maps, runbooks, and the audit
@@ -95,10 +95,16 @@ fn error_discriminants_are_unique() {
         Error::BadReserveToken as u32,
     ];
     let mut sorted = codes;
-    sorted.sort_unstable();
-    let before = sorted.len();
-    sorted.dedup();
-    assert_eq!(sorted.len(), before, "duplicate error discriminant");
+    // no_std: manual uniqueness scan (no slice::sort in core-less alloc here).
+    let mut i = 0;
+    while i < sorted.len() {
+        let mut j = i + 1;
+        while j < sorted.len() {
+            assert_ne!(sorted[i], sorted[j], "duplicate error discriminant");
+            j += 1;
+        }
+        i += 1;
+    }
 }
 
 /// Public-signal-count constants match the circuits they serve. A mismatch
