@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/tessera-zk/tessera-protocol/blob/main/docs/SEP-ATTESTATION-SCHEMA.json",
+  "title": "TreasuryAttestationRecord/0.1",
+  "description": "DRAFT v0.1 — standardized treasury attestation record (issue #43, not submitted)",
+  "type": "object",
+  "required": [
+    "sep", "contract", "epoch", "root_hash", "total_commitments", "treasury",
+    "treasury_holder", "reserve_token", "bound_ledger", "control_proven",
+    "non_omission", "method", "tx"
+  ],
+  "properties": {
+    "sep": { "const": "tessera-attestation/0.1" },
+    "contract": { "type": "string", "pattern": "^C[A-Z2-7]{55}$" },
+    "epoch": { "type": "integer", "minimum": 0 },
+    "root_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "total_commitments": { "type": "string", "pattern": "^[0-9]+$" },
+    "treasury": { "type": "string", "pattern": "^[0-9]+$" },
+    "treasury_holder": { "type": "string", "pattern": "^G[A-Z2-7]{55}$" },
+    "reserve_token": { "type": "string", "pattern": "^C[A-Z2-7]{55}$" },
+    "bound_ledger": { "type": "integer", "minimum": 0 },
+    "control_proven": { "type": "boolean" },
+    "non_omission": { "enum": ["in-circuit", "vigilance", "none"] },
+    "method": { "type": "string", "minLength": 1 },
+    "tx": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "additionalProperties": true
+}
