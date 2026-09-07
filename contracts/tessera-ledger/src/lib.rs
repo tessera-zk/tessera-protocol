@@ -1383,3 +1383,6 @@ fn leaf_message(env: &Env, epoch: u32, leaf: &SignedLeaf) -> Bytes {
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod hardening_tests;
