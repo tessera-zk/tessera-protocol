@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Label, LogLine, Pill, Spinner, Dot } from "@/components/ui";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { toErrorOutcome } from "@/lib/proverErrors";
+import type { TesseraErrorCode } from "@/lib/errors";
 import { Account, buildTree, BuiltTree, inclusionInput } from "@/lib/merkle";
 import { proveInclusion, WitnessError } from "@/lib/prover";
 import { verifyInclusion } from "@/lib/stellar";
@@ -21,7 +24,7 @@ type Result =
   | { k: "true" }
   | { k: "false" }
   | { k: "wrong" }
-  | { k: "error"; msg: string };
+  | { k: "error"; msg: string; code?: TesseraErrorCode };
 
 export default function InclusionPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -101,7 +104,8 @@ export default function InclusionPage() {
       setResult({ k: ok ? "true" : "false" });
     } catch (err) {
       console.error("[inclusion] run failed", err);
-      setResult({ k: "error", msg: String((err as Error)?.message ?? err) });
+      const { code, detail } = toErrorOutcome(err);
+      setResult({ k: "error", msg: detail, code });
     }
   }
 
@@ -221,11 +225,13 @@ export default function InclusionPage() {
               </ResultBanner>
             )}
 
-            {result.k === "error" && (
+            {result.k === "error" && result.code ? (
+              <ErrorBanner code={result.code} detail={result.msg} />
+            ) : result.k === "error" ? (
               <ResultBanner tone="danger" title="Something went wrong">
                 <span className="tnum break-all text-xs">{result.msg}</span>
               </ResultBanner>
-            )}
+            ) : null}
           </div>
         </Card>
       </div>

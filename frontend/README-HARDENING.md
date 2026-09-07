@@ -8,7 +8,8 @@ What this PR adds beyond the shipped issuer/inclusion/board pages:
 - `scripts/check_secret_hygiene.js`: CI-runnable gate (also in `frontend.yml`).
 - `docs/PROVER-ERRORS.md` + `docs/SECRET-HYGIENE-CHECKLIST.md`: operator docs.
 
-Integration left to the page layer (small, reviewable follow-up): wrap
-`lib/prover.ts` throws in issuer/inclusion pages with
-`classifyProverError(err.message)` and render `errorAdvice(code)`.
-No prover logic changed here, so no proving regression risk.
+Integration LANDED in #41: `lib/proverErrors.ts` (`toErrorOutcome`) bridges
+`WitnessError` kinds + `classifyProverError` into `{code, detail}`, rendered
+by `components/ErrorBanner.tsx` on the issuer + inclusion pages
+(see `docs/ERROR-SURFACING.md`). No prover logic changed, so no proving
+regression risk.
