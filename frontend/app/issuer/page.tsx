@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Label, LogLine, Pill, Spinner, Dot } from "@/components/ui";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { toErrorOutcome } from "@/lib/proverErrors";
+import type { TesseraErrorCode } from "@/lib/errors";
 import {
   Account,
   BN254_P,
@@ -46,7 +49,7 @@ type Outcome =
       horizon?: { successful: boolean; ledger: number };
       rootHex: string;
     }
-  | { k: "error"; msg: string };
+  | { k: "error"; msg: string; code?: TesseraErrorCode };
 
 export default function IssuerPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -211,7 +214,8 @@ export default function IssuerPage() {
       });
     } catch (err) {
       console.error("[issuer] run failed", err);
-      setOutcome({ k: "error", msg: String((err as Error)?.message ?? err) });
+      const { code, detail } = toErrorOutcome(err);
+      setOutcome({ k: "error", msg: detail, code });
     }
   }
 
@@ -431,7 +435,9 @@ export default function IssuerPage() {
         </Card>
       )}
 
-      {outcome.k === "error" && (
+      {outcome.k === "error" && outcome.code ? (
+        <ErrorBanner code={outcome.code} detail={outcome.msg} />
+      ) : outcome.k === "error" ? (
         <Card className="flex flex-col gap-3 border-[var(--color-danger)]/40">
           <div className="flex items-center gap-2 text-[var(--color-danger)]">
             <Dot tone="danger" />
@@ -439,7 +445,7 @@ export default function IssuerPage() {
           </div>
           <p className="tnum break-all text-xs text-[var(--color-muted)]">{outcome.msg}</p>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }
