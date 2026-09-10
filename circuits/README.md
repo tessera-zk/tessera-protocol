@@ -10,6 +10,7 @@ Protocol 27 "X-Ray" verifies natively). Core circuits:
 | `signed_solvency.circom` (UPGRADE 1 + FIX 1) | Health **plus** every leaf carries a valid in-circuit Baby-JubJub EdDSA signature by its owner, **and each leaf's signer key `(Ax_i, Ay_i)` is a PUBLIC input** the contract pins against the member-self-registered key list. Omitting a registered member yields a valid proof that is **rejected on-chain** (Error #10); forging a signature is unprovable in-circuit. | `[rootHash, totalCommitments, treasury, epoch, Ax[0..3], Ay[0..3]]` |
 | `signed_inclusion.circom` (UPGRADE 1) | Depth-2 inclusion instance matching the signed demo tree. | `[rootHash, leafCommitment]` |
 | `risk_solvency.circom` (UPGRADE 3) | Health **plus** a **per-leaf** concentration cap (no leaf > `maxConcBps`‱ of the set) and a min collateralization (`treasury >= minCollBps`‱ of commitments), all in zero knowledge. A violating book is unprovable. **FIX 3 honest scope:** the cap is per-LEAF, not per-member (a whale can split across leaves); per-member needs FIX 1's keyed leaves merged in (NOT-YET). | `[rootHash, totalCommitments, treasury, maxConcBps, minCollBps]` |
+| `keyed_risk_r1.circom` (R1 #66, circuit track only) | Health **plus** in-circuit EdDSA per leaf **plus per-KEY concentration** (`keySum[i]` summed before the cap — the whale split is unprovable). Compiled + witness vectors only; no setup/contract wiring (R6/R3). | `[rootHash, totalLiabilities, reserves, epoch, Ax[0..3], Ay[0..3], maxConcBps, minCollBps]` |
 
 All are verified end-to-end with real snarkjs Groth16 proofs (see
 [Verified results](#verified-results)). The UPGRADE circuits + their on-chain
@@ -86,6 +87,7 @@ instantiation to resize the tree (e.g. `Solvency(3,64)` for 8 accounts).
 | `signed_solvency` (UP1+FIX1, depth 2, 4 in-circuit EdDSA sigs) | ~34,300 | 12 | **2^16** | ~2 s |
 | `signed_inclusion` (UP1, depth 2) | **2,066** | 2 | 2^15 | <1 s |
 | `risk_solvency` (UP3, depth 4, 16 leaves) | **22,094** | 5 | 2^15 | 1.11 s |
+| `keyed_risk_r1` (R1 #66, depth 2, EdDSA + per-key sums) | **42,472** | 14 | — (witness only, R6) | — |
 
 `signed_solvency` needs the larger **2^16** Hermez ptau
 (`powersOfTau28_hez_final_16.ptau`, ~72 MB) because in-circuit Baby-JubJub EdDSA is
