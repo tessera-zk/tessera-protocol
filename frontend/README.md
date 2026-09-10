@@ -31,7 +31,7 @@ Four views:
 
 | Item | Value |
 |---|---|
-| Contract ID | `CBTN433JB2LSFHPLGEZTLEW43IKKXPKN5AYHJVMLKO4NN6EQNBVDRJP4` |
+| Contract ID | `CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ` |
 | Network | Stellar testnet, Protocol 27 |
 | RPC | `https://soroban-testnet.stellar.org` |
 | Horizon | `https://horizon-testnet.stellar.org` |
@@ -41,8 +41,8 @@ Base interface: `submit_attestation(proof: BytesN<256>, public_signals: Vec<Byte
 `get_attestation() -> Option<Attestation>`, `epoch_count() -> u32`.
 
 Advanced reads used by `/safety`: `registered_key_count`, `registered_keys`,
-`signed_epoch`, `get_risk_attestation`, `reserve_legs`, `aggregate_reserves`,
-and `get_multi_attestation`.
+`signed_epoch`, `unified_epoch`, `get_risk_attestation`, `reserve_legs`,
+`aggregate_reserves`, `get_multi_attestation`, and `get_priced_attestation`.
 
 ## Prerequisites
 

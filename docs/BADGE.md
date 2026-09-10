@@ -33,5 +33,8 @@ See `public/badge-embed.html` for a live example. Helper: `frontend/lib/badge.ts
 - The badge reflects the contract's **latest stored attestation**; freshness
   depends on the issuer submitting each epoch. A stale healthy badge is not
   proof of current health — check `timestamp` / `boundLedger` in the JSON.
+  Freshness policy + mechanical checker: `docs/BADGE-FRESHNESS-SLA.md` and
+  `scripts/check_badge_freshness.js` (SLA default 24 h; STALE must render
+  gray, never green — production badge hosting still NOT-YET).
 - `liveReserveBalance` is best-effort (RPC may be unavailable); the SVG never
   claims liveness beyond the stored attestation.

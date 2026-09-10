@@ -1,19 +1,33 @@
-# Verify commands (issue #44) — copy-paste re-verification
+# Verify commands (issue #44; refreshed #74) — copy-paste re-verification
 
 All read-only except where noted. Expected outputs inline.
 
 ```bash
-# 1. Contract suite: expect 35 passed, 0 failed
+# 1. Contract suite: expect 62 passed, 0 failed
 cd contracts && cargo test -p tessera-ledger
 
 # 2. Unified setup chain: expect VERIFY PASS + pinned hashes
 bash scripts/verify_unified_setup.sh
+
+# 2b. Unified positive control: expect pass=2 fail=0
+bash scripts/prove_unified_positive.sh
+
+# 2c. R1 keyed-risk vectors: expect pass=5 fail=0
+bash scripts/run_keyed_risk_r1_vectors.sh
 
 # 3. Oracle math: expect 9 pass, 0 fail
 node --test scripts/oracle_math.test.js
 
 # 4. Keyed-risk vectors: expect 4 as-expected, 0 unexpected
 bash scripts/run_keyed_risk_vectors.sh
+
+# 4b. SDK: expect 18 pass, 0 fail
+node --test sdk/test/*.test.js
+
+# 4c. SEP records: expect all blocks valid (schema + strict)
+node scripts/validate_sep.js --doc docs/SEP-ATTESTATION-EXAMPLES.md
+node scripts/validate_sep.js --strict --doc docs/SEP-ATTESTATION-EXAMPLES.md
+node --test scripts/validate_sep.test.js
 
 # 5. Secret hygiene: expect OK
 node scripts/check_secret_hygiene.js

@@ -33,3 +33,8 @@ jobs:
         run: node scripts/validate_sep.js --strict --doc docs/SEP-ATTESTATION-EXAMPLES.md
       - name: SEP adversarial corpus
         run: node --test scripts/validate_sep.test.js
+      - name: Badge freshness checker (offline fixtures + unit tests)
+        run: |
+          node --test scripts/check_badge_freshness.test.js
+          printf '{"status":"healthy","timestamp":1788510000,"boundLedger":4490585}' > /tmp/stale.json
+          node scripts/check_badge_freshness.js --status /tmp/stale.json --now 2026-09-10T12:00:00Z --current-ledger 4604000 && exit 1 || echo "stale fixture correctly non-fresh"
