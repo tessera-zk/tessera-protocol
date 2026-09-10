@@ -48,6 +48,15 @@ mod risk_vk_data {
     include!("risk_vk_data.rs");
 }
 
+// Compile-time VK for the UNIFIED circuit (#57: health + in-circuit EdDSA
+// non-omission + risk limits in one proof). 14 public signals:
+// [rootHash, totalLiabilities, reserves, epoch,
+//  Ax[0..3], Ay[0..3], maxConcBps, minCollBps].
+#[allow(dead_code)]
+mod unified_vk_data {
+    include!("unified_vk_data.rs");
+}
+
 /// Number of leaves in the fixed-size signed_solvency demo circuit (depth 2).
 /// The customer-self-registered key list must hold EXACTLY this many keys, one
 /// per leaf, for a signed attestation to be verifiable.
@@ -63,6 +72,17 @@ const INCLUSION_N_PUBLIC: u32 = 2;
 const SIGNED_SOLVENCY_N_PUBLIC: u32 = 4 + 2 * SIGNED_SOLVENCY_LEAVES;
 /// risk_solvency exposes [rootHash, totalLiabilities, reserves, maxConcBps, minCollBps].
 const RISK_SOLVENCY_N_PUBLIC: u32 = 5;
+/// Number of leaves in the fixed-size unified_solvency demo circuit (depth 2).
+/// Same demo width as the signed circuit; the customer-self-registered key list
+/// must hold EXACTLY this many keys, one per leaf.
+const UNIFIED_SOLVENCY_LEAVES: u32 = 4;
+/// unified_solvency exposes health + non-omission + risk in one proof:
+///   [rootHash, totalLiabilities, reserves, epoch,
+///    Ax[0..3], Ay[0..3], maxConcBps, minCollBps]
+/// = 4 scalars + 4 Ax + 4 Ay + 2 policy bounds = 14 public signals. Order is
+/// load-bearing: pinned by docs/UNIFIED-PUBLIC-SIGNALS.md and asserted by
+/// scripts/prove_unified_positive.sh against the #55 artifact.
+const UNIFIED_SOLVENCY_N_PUBLIC: u32 = 4 + 2 * UNIFIED_SOLVENCY_LEAVES + 2;
 
 /// BN254 scalar field modulus r (big-endian). Every Groth16 public signal must
 /// be a canonical field element `< r`; a non-reduced 32-byte value could alias a
@@ -274,6 +294,10 @@ enum DataKey {
     /// A new signed attestation must carry a strictly greater epoch, so a stale
     /// proof cannot be replayed to show old (smaller) liabilities.
     SignedEpoch,
+    /// Highest circuit `epoch` accepted by `submit_unified_attestation` (#57).
+    /// Separate counter from `SignedEpoch`: the unified and signed circuits
+    /// have independent epoch namespaces (different roots per proof family).
+    UnifiedEpoch,
     /// Latest risk-limited attestation (UPGRADE 3).
     RiskLatest,
     /// Multi-asset / multi-holder reserve legs (UPGRADE 2).
@@ -409,6 +433,17 @@ fn risk_solvency_vk(env: &Env) -> VerificationKey {
         &risk_vk_data::VK_RISK_SOLVENCY_GAMMA,
         &risk_vk_data::VK_RISK_SOLVENCY_DELTA,
         &risk_vk_data::VK_RISK_SOLVENCY_IC,
+    )
+}
+
+fn unified_solvency_vk(env: &Env) -> VerificationKey {
+    VerificationKey::from_const(
+        env,
+        &unified_vk_data::VK_UNIFIED_SOLVENCY_ALPHA,
+        &unified_vk_data::VK_UNIFIED_SOLVENCY_BETA,
+        &unified_vk_data::VK_UNIFIED_SOLVENCY_GAMMA,
+        &unified_vk_data::VK_UNIFIED_SOLVENCY_DELTA,
+        &unified_vk_data::VK_UNIFIED_SOLVENCY_IC,
     )
 }
 
@@ -1149,6 +1184,163 @@ impl TesseraLedger {
     /// The latest risk-limited attestation, if any (UPGRADE 3).
     pub fn get_risk_attestation(env: Env) -> Option<RiskAttestation> {
         env.storage().persistent().get(&DataKey::RiskLatest)
+    }
+
+    // ===== UNIFIED CIRCUIT: health + non-omission + risk in one proof (#57) =====
+
+    /// Verify a UNIFIED solvency Groth16 proof on-chain and store the attestation
+    /// only if ALL hold:
+    ///   1. the Groth16 proof verifies (unified VK, 14 signals) — a passing proof
+    ///      means every leaf carries a valid member EdDSA signature (non-omission),
+    ///      balances are non-negative with a correct Merkle-sum root (health), and
+    ///      the per-leaf concentration + collateralization bounds hold (risk);
+    ///   2. the proof's PUBLIC signer keys `(Ax_i, Ay_i)` equal the customer-self-
+    ///      registered ordered key list, position-by-position (FIX 1 pin, #10);
+    ///   3. the circuit `epoch` is strictly greater than the last accepted UNIFIED
+    ///      epoch (independent namespace from the signed path, FIX 4 pattern, #14);
+    ///   4. the proof's PUBLIC risk bounds are at least as strict as contract
+    ///      policy (`maxConcBps <= 4000`, `minCollBps >= 10500`, #21 — same floors
+    ///      as `submit_risk_attestation`, no issuer-weakened policy);
+    ///   5. `reserves >= totalLiabilities` (defense in depth);
+    ///   6. the reserve holder authorizes (`require_auth`, UPGRADE 2);
+    ///   7. `reserves <= reserve_holder.balance(reserve_token)` read live.
+    ///
+    /// The stored attestation has `non_omission_in_circuit = true` and mirrors
+    /// into `Latest`, so `verify_inclusion` binds to the unified root and weaker
+    /// paths cannot downgrade it afterwards (`reject_weak_downgrade` sees the flag).
+    /// Panics (nothing stored) on any failing check. Returns the epoch.
+    ///
+    /// `public_signals` = [rootHash, totalLiabilities, reserves, epoch,
+    /// Ax[0..3], Ay[0..3], maxConcBps, minCollBps] (pinned order, #55).
+    pub fn submit_unified_attestation(
+        env: Env,
+        proof: BytesN<256>,
+        public_signals: Vec<BytesN<32>>,
+    ) -> u32 {
+        if public_signals.len() != UNIFIED_SOLVENCY_N_PUBLIC {
+            panic_with_error!(&env, Error::MalformedPublicInputs);
+        }
+        assert_canonical_signals(&env, &public_signals);
+
+        let vk = unified_solvency_vk(&env);
+        let parsed = Groth16Proof::from_bytes(&env, &proof);
+        let fr = to_fr_vec(&env, &public_signals);
+        if let Err(e) = verify(&env, &vk, &parsed, &fr) {
+            panic_with_error!(&env, map_g16(e));
+        }
+
+        let root_hash = public_signals.get_unchecked(0);
+        let total_liabilities = public_signals.get_unchecked(1);
+        let reserves = public_signals.get_unchecked(2);
+        let circuit_epoch = public_signals.get_unchecked(3);
+        // Public layout: Ax[i] = signal 4+i, Ay[i] = signal 4+N+i,
+        // maxConcBps = signal 12, minCollBps = signal 13.
+        let max_conc_bps = be32_to_u32(&public_signals.get_unchecked(12));
+        let min_coll_bps = be32_to_u32(&public_signals.get_unchecked(13));
+
+        reject_seen_root(&env, &root_hash);
+
+        // NON-OMISSION PIN (FIX 1, same pattern as submit_signed_attestation).
+        let registered: Vec<CustomerKey> = match env
+            .storage()
+            .persistent()
+            .get(&DataKey::RegisteredKeys)
+        {
+            Some(k) => k,
+            None => panic_with_error!(&env, Error::RegisteredSetNotSet),
+        };
+        if registered.len() != UNIFIED_SOLVENCY_LEAVES {
+            panic_with_error!(&env, Error::RegisteredSetNotSet);
+        }
+        for i in 0..UNIFIED_SOLVENCY_LEAVES {
+            let ax = public_signals.get_unchecked(4 + i);
+            let ay = public_signals.get_unchecked(4 + UNIFIED_SOLVENCY_LEAVES + i);
+            let k = registered.get_unchecked(i);
+            if ax != k.ax || ay != k.ay {
+                panic_with_error!(&env, Error::RegisteredSetMismatch);
+            }
+        }
+
+        // FRESHNESS (FIX 4 pattern, independent unified namespace).
+        let new_epoch = match be32_to_i128(&circuit_epoch) {
+            Some(v) => v,
+            None => panic_with_error!(&env, Error::MalformedPublicInputs),
+        };
+        if let Some(last) = env
+            .storage()
+            .persistent()
+            .get::<_, u32>(&DataKey::UnifiedEpoch)
+        {
+            if new_epoch <= (last as i128) {
+                panic_with_error!(&env, Error::StaleEpoch);
+            }
+        }
+
+        // RISK POLICY FLOOR (same bar as submit_risk_attestation): the proof's
+        // public bounds must be at least as strict as contract policy.
+        if max_conc_bps > 4000 || min_coll_bps < 10500 {
+            panic_with_error!(&env, Error::RiskPolicyTooWeak);
+        }
+
+        if !ge_be(&reserves, &total_liabilities) {
+            panic_with_error!(&env, Error::Insolvent);
+        }
+
+        let config: ReserveConfig = match env.storage().instance().get(&DataKey::Config) {
+            Some(c) => c,
+            None => panic_with_error!(&env, Error::NotConfigured),
+        };
+
+        // UPGRADE 2: proof of ASSETS CONTROL.
+        config.reserve_holder.require_auth();
+
+        let declared_reserves = match be32_to_i128(&reserves) {
+            Some(v) => v,
+            None => panic_with_error!(&env, Error::ReservesOutOfRange),
+        };
+
+        let onchain_reserves =
+            token::TokenClient::new(&env, &config.reserve_token).balance(&config.reserve_holder);
+
+        if declared_reserves > onchain_reserves {
+            panic_with_error!(&env, Error::ReserveUnbacked);
+        }
+
+        let bound_ledger = env.ledger().sequence();
+        let store = env.storage().persistent();
+        let epoch: u32 = store.get(&DataKey::Epoch).unwrap_or(0);
+
+        let attestation = Attestation {
+            root_hash: root_hash.clone(),
+            total_liabilities,
+            reserves,
+            reserve_holder: config.reserve_holder.clone(),
+            reserve_token: config.reserve_token.clone(),
+            bound_reserves: onchain_reserves,
+            bound_ledger,
+            timestamp: env.ledger().timestamp(),
+            epoch,
+            control_proven: true,
+            non_omission_in_circuit: true,
+        };
+
+        store.set(&DataKey::Latest, &attestation);
+        mark_root_seen(&env, &root_hash);
+        store.set(&DataKey::Epoch, &(epoch + 1));
+        store.set(&DataKey::UnifiedEpoch, &(new_epoch as u32));
+
+        env.events().publish(
+            (symbol_short!("ledger"), symbol_short!("unified")),
+            (epoch, root_hash, new_epoch, onchain_reserves),
+        );
+
+        epoch
+    }
+
+    /// The highest circuit `epoch` accepted by `submit_unified_attestation`
+    /// so far, if any (#57 freshness counter, independent of `signed_epoch`).
+    pub fn unified_epoch(env: Env) -> Option<u32> {
+        env.storage().persistent().get(&DataKey::UnifiedEpoch)
     }
 
     // ===== UPGRADE 2: MULTI-ASSET / MULTI-HOLDER RESERVES =====
