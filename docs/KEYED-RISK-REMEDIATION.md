@@ -5,7 +5,7 @@ here is started — this list is the definition of done.
 
 | ID | Item | Owner hint | Depends on |
 |---|---|---|---|
-| R1 | Merge `EdDSAPoseidonVerifier` per leaf (as in `UnifiedSolvency`) so keyed leaves are authenticated, not just attributable | Circuits | — |
+| R1 | Merge `EdDSAPoseidonVerifier` per leaf (as in `UnifiedSolvency`) so keyed leaves are authenticated, not just attributable — DONE #66 (`circuits/keyed_risk_r1.circom`, 42,472 constraints, 5/5 vectors; per-key sums included) | Circuits | — |
 | R2 | Adopt Sybil stance B (identity-gated registration) for regulated issuers, keep D disclosed for others | Product + Compliance | Sybil policy doc (done) |
 | R3 | New entrypoint `submit_keyed_risk_attestation` with full pin (keys order, count, epoch monotonicity, reserve binding, per-holder auth) | Contracts | R1 |
 | R4 | Unit tests: stale-key-set rejects (#10), count-mismatch rejects (#10), split-position still passes per-position (documents scope) | Contracts | R3 |
