@@ -21,3 +21,15 @@ jobs:
       - name: Forbid NEXT_PUBLIC secrets in docs
         # SECRET suffix only: public client config (CONTRACT_ID, RPC_URL, ...) is fine.
         run: "! grep -rn 'NEXT_PUBLIC_[A-Z0-9_]*SECRET' docs/ README.md frontend/README.md 2>/dev/null || (echo 'secret hygiene violation' && exit 1)"
+  sep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: SEP examples validate (schema, all blocks)
+        run: node scripts/validate_sep.js --doc docs/SEP-ATTESTATION-EXAMPLES.md
+      - name: SEP examples validate (strict, zero warnings)
+        run: node scripts/validate_sep.js --strict --doc docs/SEP-ATTESTATION-EXAMPLES.md
+      - name: SEP adversarial corpus
+        run: node --test scripts/validate_sep.test.js

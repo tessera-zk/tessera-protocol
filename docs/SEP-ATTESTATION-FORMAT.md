@@ -1,7 +1,10 @@
-# SEP-DRAFT: Standardized Treasury Attestation Record (issue #43)
+# SEP-DRAFT: Standardized Treasury Attestation Record (issue #43, v0.2 #70)
 
-Status: **DRAFT v0.1 — not submitted.** For community review inside this repo
-first (see `docs/SEP-REVIEW-CHECKLIST.md`).
+Status: **DRAFT v0.2 — policy layer added, schema-compatible with v0.1, not
+submitted.** For community review inside this repo first (see
+`docs/SEP-REVIEW-CHECKLIST.md`, triaged; submission packet
+`docs/SEP-SUBMISSION-PACKET.md`). Method semantics:
+`docs/SEP-METHOD-REGISTRY.md`; machine checks: `scripts/validate_sep.js`.
 
 ## Motivation
 
