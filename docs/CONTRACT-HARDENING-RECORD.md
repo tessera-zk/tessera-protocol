@@ -6,6 +6,16 @@ Command: `cd contracts && cargo test -p tessera-ledger`
 test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
+## Suite growth since (append-only log)
+
+- #57 (2026-09-10): +8 unified entrypoint tests → **43 green**.
+- #61 (2026-09-10): +1 downgrade-#20 regression (live #61 finding) + unified
+  arity pins → **44 green**.
+- #64 (2026-09-10): +8 priced-reserve gate tests (mock oracle) → **52 green**.
+- #72 (2026-09-10): +10 edge tests (unified advance, priced guards #27/#12/
+  #26/#5/#17/#20, staleness boundary 100, oracle-config auth, behavioral
+  #16) → **62 green**. Command and `0 failed` identical; full output in CI.
+
 26 pre-existing tests untouched and green; 9 new `hardening_tests::` tests:
 
 ```
