@@ -27,6 +27,14 @@ guarantee (ADVANCED-STATUS.md FIX 1) now measured on the unified circuit.
 
 ## What remains
 
-A positive control (real member signatures → valid witness → valid proof)
+~~A positive control (real member signatures → valid witness → valid proof)
 needs per-leaf Baby-JubJub keys + signatures from `gen_signed_demo.js`
-wired into `gen_unified_input.js`. NOT run — recorded as the next step.
+wired into `gen_unified_input.js`. NOT run — recorded as the next step.~~
+
+DONE (#55, 2026-09-10): `scripts/gen_unified_positive.js` +
+`scripts/prove_unified_positive.sh` → pass=2 fail=0, record in
+`docs/UNIFIED-POSITIVE-CONTROL.md`. The negative half of that run
+independently reproduces this control on REAL keys (S bit flipped at slot 2):
+witness aborts at `ForceEqualIfEnabled` ← `EdDSAPoseidonVerifier` ←
+`UnifiedSolvency` line 66 — the same assertion, now confirmed for both
+placeholder-zero AND forged-real-signature cases.
