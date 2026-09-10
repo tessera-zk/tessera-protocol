@@ -27,4 +27,8 @@ jobs:
         run: |
           node scripts/gen_input.js > /tmp/in.json
           node scripts/gen_unified_input.js > /tmp/unified.json
+          node scripts/gen_unified_positive.js
+          test -f build/inputs/unified_positive.json
+          node scripts/gen_unified_positive.js
+          node -e "const a=require('./contracts/artifacts/unified-positive.json'); if(a.rootHash_dec!=='10088671665620804722384723141474773842541738737549248387290084559108637604901') throw new Error('positive-control root drift')"
           node scripts/estimate_depth10.js

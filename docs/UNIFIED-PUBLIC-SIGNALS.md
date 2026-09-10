@@ -22,6 +22,11 @@ Count check: 4 + 2*4 + 2 = 14 = `nPublic`. Matches
 `circuits/unified_solvency.circom` main declaration and
 `docs/UNIFIED-CIRCUIT.md` § "Public-signal order".
 
+> Proven in practice (#55, 2026-09-10): `scripts/prove_unified_positive.sh`
+> asserts all 14 signals against `contracts/artifacts/unified-positive.json`
+> and `snarkjs groth16 verify` returns OK. This order is now load-bearing —
+> `submit_unified_attestation` (#56) must consume it exactly.
+
 ## Contract wiring checklist (NOT-YET — do not implement without these)
 
 - [ ] Canonical `< r` range assert on all 14 signals before `g1_mul` (M3 rule)

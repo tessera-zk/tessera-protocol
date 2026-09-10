@@ -2,6 +2,11 @@
 // Mirrors gen_signed_demo.js shape + risk bounds. Does NOT prove anything;
 // output is a witness-input JSON for `circom --wasm` smoke runs only.
 //
+// NOTE (#55): for REAL signatures + a recomputed root + prove/verify, use
+// scripts/gen_unified_positive.js + scripts/prove_unified_positive.sh
+// (record: docs/UNIFIED-POSITIVE-CONTROL.md). This file stays as the
+// zero-key structural smoke only.
+//
 // Usage: node scripts/gen_unified_input.js > /tmp/unified_input.json
 
 const balances = [8000, 7000, 6000, 7000]; // total 28000, mirrors signed demo
