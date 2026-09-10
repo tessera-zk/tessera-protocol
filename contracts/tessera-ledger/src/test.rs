@@ -767,7 +767,10 @@ fn setup_priced(
     let mock = MockOracleClient::new(env, &mock_id);
 
     let gov = Address::generate(env);
-    let id = env.register(TesseraLedger, (gov, token.clone()));
+    let id = env.register(TesseraLedger, (gov.clone(), token.clone()));
+    // Fund the constructor holder too: cross-path tests (signed/risk submits
+    // in a priced env, #72) need its balance to back their fixtures.
+    StellarAssetClient::new(env, &token).mint(&gov, &300_000);
     let client = TesseraLedgerClient::new(env, &id);
     client.set_oracle_config(&mock_id, &100, &vec![env, 1u32, 2u32]);
 
@@ -937,6 +940,170 @@ fn priced_without_holder_auth_fails() {
     client
         .set_auths(&[])
         .submit_priced_attestation(&proof, &signals, &legs); // must panic
+}
+
+/// Priced path without oracle config: `OracleNotConfigured` (#27).
+#[test]
+#[should_panic(expected = "Error(Contract, #27)")]
+fn priced_without_oracle_config_panics() {
+    let env = Env::default();
+    // Base setup only: token + funded holder + ledger, NO oracle wiring.
+    let (client, holder) = setup(&env, FIXTURE_RESERVES);
+    let token = client.reserve_config().expect("config").reserve_token;
+
+    let legs = vec![
+        &env,
+        PricedLeg { holder: holder.clone(), token: token.clone(), feed_id: 1 },
+    ];
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #27
+}
+
+/// Empty leg set: `NoReserveLegs` (#12) — a priced attestation over nothing.
+#[test]
+#[should_panic(expected = "Error(Contract, #12)")]
+fn priced_empty_legs_panics() {
+    let env = Env::default();
+    let (client, _mock, _token, _a, _b) = setup_priced(&env, 100_000, 1_000_000);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    client.submit_priced_attestation(&proof, &signals, &vec![&env]); // must panic #12
+}
+
+/// Empty feed list at config time: `UnknownPriceFeed` (#26) — fail closed at
+/// config, not at first submit.
+#[test]
+#[should_panic(expected = "Error(Contract, #26)")]
+fn oracle_config_empty_feeds_panics() {
+    let env = Env::default();
+    let (client, _mock, token, _a, _b) = setup_priced(&env, 100_000, 1_000_000);
+
+    client.set_oracle_config(&token, &100, &vec![&env]); // must panic #26
+}
+
+/// Backed proof, unbacked aggregate (100 << 189140 declared): `ReserveUnbacked`
+/// (#5) — the oracle-scaled floor binds like the live-balance floor.
+#[test]
+#[should_panic(expected = "Error(Contract, #5)")]
+fn priced_unbacked_aggregate_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 50, 50);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &10_000_000, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #5
+}
+
+/// Same priced root replayed: the seen-root guard fires (#17).
+#[test]
+#[should_panic(expected = "Error(Contract, #17)")]
+fn priced_same_root_replay_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &1_234_567, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs);
+    client.submit_priced_attestation(&proof, &signals, &legs); // replay -> #17
+}
+
+/// Priced submit after a signed Latest: `WeakAttestationDowngrade` (#20).
+/// Extends the live #61 finding (risk path) to the priced path — no weaker
+/// root overwrites a stronger one, whichever weak path tries.
+#[test]
+#[should_panic(expected = "Error(Contract, #20)")]
+fn priced_after_signed_latest_is_rejected_as_downgrade() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+    register_all_keys(&env, &client);
+
+    let sproof = BytesN::from_array(&env, &ifx::SIGNED_SOLVENCY_PROOF);
+    let ssignals = public_vec(&env, &ifx::SIGNED_SOLVENCY_PUBLIC);
+    client.submit_signed_attestation(&sproof, &ssignals); // stronger Latest stored
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &1_234_567, &0);
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #20
+}
+
+/// Staleness BOUNDARY: age exactly 100 (== max) still passes on-chain —
+/// parity with the JS trial (`1100 - 1000` passes, `1101` rejects).
+#[test]
+fn priced_staleness_boundary_100_passes() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    env.ledger().set_sequence_number(100);
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &1_234_567, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // age 100 OK
+
+    let att = client.get_priced_attestation().expect("stored");
+    assert_eq!(att.aggregate_reserves, 223_456);
+}
+
+/// Oracle config without holder auth: the primary holder must authorize, so a
+/// non-controlling caller cannot rig the price source.
+#[test]
+#[should_panic]
+fn oracle_config_without_holder_auth_fails() {
+    let env = Env::default();
+    let (client, _mock, token, _a, _b) = setup_priced(&env, 100_000, 1_000_000);
+
+    client
+        .set_auths(&[])
+        .set_oracle_config(&token, &100, &vec![&env, 1u32]); // must panic
+}
+
+/// Non-canonical public signal (the field modulus itself, `>= r`): rejected
+/// (`NonCanonicalSignal`, #16) BEFORE any pairing work — the M3 aliasing bar.
+#[test]
+#[should_panic(expected = "Error(Contract, #16)")]
+fn non_canonical_signal_is_rejected() {
+    let env = Env::default();
+    let client = register(&env);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let mut signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    signals.set(0, BytesN::from_array(&env, &BN254_FR_MODULUS));
+    client.submit_attestation(&proof, &signals); // must panic #16
+}
+
+/// Freshness ADVANCE (companion to the stale/replay negatives): submitting the
+/// epoch-1 book after epoch-0 succeeds and moves the unified counter to 1.
+#[test]
+fn unified_epoch_advance_accepts_greater() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let e0_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let e0_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    assert_eq!(client.submit_unified_attestation(&e0_proof, &e0_signals), 0);
+    assert_eq!(client.unified_epoch(), Some(0));
+
+    let e1_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_E1_PROOF);
+    let e1_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_E1_PUBLIC);
+    assert_eq!(client.submit_unified_attestation(&e1_proof, &e1_signals), 1);
+    assert_eq!(client.unified_epoch(), Some(1));
+    assert_eq!(client.epoch_count(), 2);
 }
 
 // ===== UPGRADE 2: MULTI-ASSET / MULTI-HOLDER RESERVES =====
