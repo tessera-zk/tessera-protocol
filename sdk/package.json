@@ -5,9 +5,22 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "engines": { "node": ">=18" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tessera-zk/tessera-protocol.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/tessera-zk/tessera-protocol/tree/main/sdk",
+  "files": ["src/", "README.md", "example.js"],
   "exports": {
     "./reads": "./src/reads.js",
     "./embed": "./src/embed.js",
     "./types": "./src/types.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "example": "node example.js",
+    "prepublishOnly": "node prepublish-check.js"
   }
 }
