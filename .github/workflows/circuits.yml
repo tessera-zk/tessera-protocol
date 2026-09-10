@@ -31,4 +31,8 @@ jobs:
           test -f build/inputs/unified_positive.json
           node scripts/gen_unified_positive.js
           node -e "const a=require('./contracts/artifacts/unified-positive.json'); if(a.rootHash_dec!=='10088671665620804722384723141474773842541738737549248387290084559108637604901') throw new Error('positive-control root drift')"
+          node scripts/gen_multi_book.js
+          node --check scripts/proof_to_cli.js
+          node --check scripts/slip10.js
+          node --check scripts/two_signer_submit.js
           node scripts/estimate_depth10.js

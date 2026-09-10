@@ -12,6 +12,8 @@
 | Member inclusion returns true | Inclusion tx `c83185c61ef933e5f9affc4ea5b169079953d8ba1c6c6f71afd219d66958ece6` | Stellar Expert testnet link |
 | Scale to 256 accounts | Depth-8: 337,079 constraints, 0.98s verify, 806 B proof | `BENCHMARKS.md` |
 | 35 contract tests green | `docs/CONTRACT-HARDENING-RECORD.md` (real output) | `cargo test -p tessera-ledger` |
+| 43 contract tests green (35 + 8 unified entrypoint) | `submit_unified_attestation` suite (honest/omission/stale/replay/unbacked/arity) | `cargo test -p tessera-ledger` |
+| Two-holder control on live legs (fresh contract) | `set_reserve_legs` tx `739a7f9f09f62069455cb14d5d74d6e920a3fe42f94627d05f05f617d160e7a0` (L4602999) + `submit_multi_attestation` tx `168785eb1a18617b6c72ab46a9b565a81458656734e88b33a1c89019b6decdca` (L4603136 SUCCESS, aggregate 200000, 2 auth entries, epoch 1) — single-operator caveat disclosed | `evidence/multi-2026-09-10.md` |
 | Unified setup real (2^16) | `docs/UNIFIED-SETUP-LOG.md` (hashes) + `vk_unified_solvency.json` | `scripts/verify_unified_setup.sh` |
 | Priced-aggregate math correct | `docs/ORACLE-TRIAL-RESULTS.md` (9/9 tests) | `node --test scripts/oracle_math.test.js` |
 | Keyed-risk vectors behave | `docs/KEYED-RISK-VECTOR-RESULTS.md` (4/4) | `bash scripts/run_keyed_risk_vectors.sh` |

@@ -1,8 +1,10 @@
-# Multi-holder control runbook (issue #7)
+# Multi-holder control runbook (issue #7; FIRST LIVE RUN #59, 2026-09-10)
 
-Status: **runbook + scripts. Testnet multi-holder tx itself is NOT-YET.**
-Unit tests cover two holders; the testnet multi-asset demo used one signer
-across two assets (honest caveat from PRD, retained here).
+Status: **LIVE on the fresh Tessera contract** — two-signer
+`submit_multi_attestation` tx `168785eb…` (ledger 4603136, SUCCESS), evidence
+`evidence/multi-2026-09-10.md`. Unit tests cover two holders; the legacy
+single-signer multi-asset demo caveat (PRD) is superseded for the multi path
+(single operator, two distinct signers — disclosed in the evidence file).
 
 ## Why multi-holder matters
 
@@ -43,6 +45,33 @@ bash scripts/testnet_multi_holder_demo.sh
 - Missing holder auth → `require_auth` panic. Add the absent signer's auth entry.
 - Over-declared treasury → Error #15 path / `ReserveUnbacked` family; lower
   declared reserves to <= aggregate.
+- CLI vec-of-struct args: pass via `--<arg>-file-path` with i128 values as
+  JSON STRINGS (`"scale_num":"1"`); bare numbers are rejected (hit 2026-09-10).
+- `--sign-with-key` is single-use (CLI 26.1.0): one key via `--source`, the
+  second via the recipe below — never two `--sign-with-key` flags.
+
+## Working two-signer recipe (executed 2026-09-10, #59)
+
+`stellar contract invoke --send=yes` cannot carry two Soroban auth signatures,
+and `tx sign` chaining appends ENVELOPE signatures only (A+B → `TxBadAuthExtra`,
+B-only → `TxBadAuth`). The working path signs each auth ENTRY with its address
+key (`scripts/two_signer_submit.js` + `scripts/slip10.js`):
+
+```bash
+# 1. build unsigned (no auths) — proof hex via scripts/proof_to_cli.js
+stellar contract invoke --id $CONTRACT --source $HOLDER_A --network testnet \
+  --build-only -- submit_multi_attestation \
+  --proof "$PROOF_HEX" --public_signals-file-path /tmp/multi_pub.json \
+  > /tmp/multi_unsigned.xdr
+# 2. simulate + assemble + per-entry authorize + source envelope sign + send
+UNSIGNED_XDR=/tmp/multi_unsigned.xdr \
+SIGNERS=$HOLDER_A_IDENTITY,$HOLDER_B_IDENTITY \
+  node scripts/two_signer_submit.js   # prints TX_HASH + LEDGER
+```
+
+Result: `168785eb…` (ledger 4603136). Auth entry 0 = source-account
+credentials (holder A, covered by envelope); entry 1 = address credentials
+(holder B, entry-level signature). Full record: `evidence/multi-2026-09-10.md`.
 
 ## Evidence to capture
 
