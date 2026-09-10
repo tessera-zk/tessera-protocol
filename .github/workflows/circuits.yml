@@ -23,6 +23,7 @@ jobs:
           mkdir -p /tmp/ci-circuits
           circom circuits/solvency.circom --r1cs --sym -o /tmp/ci-circuits
           circom circuits/unified_solvency.circom --r1cs --sym -o /tmp/ci-circuits
+          circom circuits/keyed_risk_r1.circom --r1cs --sym -o /tmp/ci-circuits
       - name: Input generators smoke
         run: |
           node scripts/gen_input.js > /tmp/in.json
@@ -32,6 +33,9 @@ jobs:
           node scripts/gen_unified_positive.js
           node -e "const a=require('./contracts/artifacts/unified-positive.json'); if(a.rootHash_dec!=='10088671665620804722384723141474773842541738737549248387290084559108637604901') throw new Error('positive-control root drift')"
           node scripts/gen_multi_book.js
+          node scripts/gen_keyed_risk_r1.js
+          test -f build/inputs/keyed_r1_v1.json
+          bash scripts/run_keyed_risk_vectors.sh
           node --check scripts/proof_to_cli.js
           node --check scripts/slip10.js
           node --check scripts/two_signer_submit.js
