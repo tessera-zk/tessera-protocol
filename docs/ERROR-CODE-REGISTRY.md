@@ -29,3 +29,8 @@ numbers. Pinned by `hardening_tests::adjudicated_error_codes_are_stable` and
 | 20 | WeakAttestationDowngrade | Weaker path overwriting signed Latest |
 | 21 | RiskPolicyTooWeak | Risk bounds below contract policy |
 | 22 | BadReserveToken | Leg token ≠ bound token |
+| 23 | StalePrice | Oracle quote older than staleness bound (#64) |
+| 24 | BadPrice | Oracle quote non-positive, no fallback (#64) |
+| 25 | MissingPrice | No quote for pinned feed, no default (#64) |
+| 26 | UnknownPriceFeed | Leg feed not pinned at config time (#64) |
+| 27 | OracleNotConfigured | Priced path before set_oracle_config (#64) |
