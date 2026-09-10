@@ -22,6 +22,12 @@ Command: `bash scripts/unified_setup.sh` (wall time 3m22s).
 
 ## What this does NOT mean
 
-No contract entrypoint consumes this vkey yet; no unified proof has been
-generated (needs real member signatures, not placeholders); production still
-needs the ceremony in `docs/TRUSTED-SETUP-CEREMONY.md`.
+No contract entrypoint consumes this vkey yet (follow-up: #56); production
+still needs the ceremony in `docs/TRUSTED-SETUP-CEREMONY.md`.
+
+## Positive control (issue #55, 2026-09-10)
+
+First real unified proof generated (needs real member signatures — done):
+`bash scripts/prove_unified_positive.sh` → pass=2 fail=0, snarkJS OK, root
+`1008867166562…37604901`, 14 signals in pinned order. Full record:
+`docs/UNIFIED-POSITIVE-CONTROL.md`.

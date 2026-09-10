@@ -27,4 +27,6 @@ jobs:
         run: |
           node scripts/gen_input.js > /tmp/in.json
           node scripts/gen_unified_input.js > /tmp/unified.json
+          node scripts/gen_unified_positive.js
+          test -f build/inputs/unified_positive.json
           node scripts/estimate_depth10.js
