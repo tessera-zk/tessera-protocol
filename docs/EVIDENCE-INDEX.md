@@ -14,6 +14,8 @@
 | 35 contract tests green | `docs/CONTRACT-HARDENING-RECORD.md` (real output) | `cargo test -p tessera-ledger` |
 | 43 contract tests green (35 + 8 unified entrypoint) | `submit_unified_attestation` suite (honest/omission/stale/replay/unbacked/arity) | `cargo test -p tessera-ledger` |
 | Two-holder control on live legs (fresh contract) | `set_reserve_legs` tx `739a7f9f09f62069455cb14d5d74d6e920a3fe42f94627d05f05f617d160e7a0` (L4602999) + `submit_multi_attestation` tx `168785eb1a18617b6c72ab46a9b565a81458656734e88b33a1c89019b6decdca` (L4603136 SUCCESS, aggregate 200000, 2 auth entries, epoch 1) — single-operator caveat disclosed | `evidence/multi-2026-09-10.md` |
+| Signed attestation on fresh contract (FIX 1 live) | 4 self-registered keys (L4603213–19) + `submit_signed_attestation` tx `66cbf46f69efed8e484856fbe73b9c6092a567d23a3728b9c4cb7a17a39cdcbe` (L4603225 SUCCESS, epoch 2, non_omission=true, bound 189140); omission/replay/tamper rejected #10/#17/#1 | `evidence/advanced-2026-09-10.md` |
+| Downgrade protection fires live | `submit_risk_attestation` after signed Latest rejected `Error #20` (simulation, nothing stored) + sequencing lesson (risk-before-signed) | `evidence/advanced-2026-09-10.md` |
 | Unified setup real (2^16) | `docs/UNIFIED-SETUP-LOG.md` (hashes) + `vk_unified_solvency.json` | `scripts/verify_unified_setup.sh` |
 | Priced-aggregate math correct | `docs/ORACLE-TRIAL-RESULTS.md` (9/9 tests) | `node --test scripts/oracle_math.test.js` |
 | Keyed-risk vectors behave | `docs/KEYED-RISK-VECTOR-RESULTS.md` (4/4) | `bash scripts/run_keyed_risk_vectors.sh` |

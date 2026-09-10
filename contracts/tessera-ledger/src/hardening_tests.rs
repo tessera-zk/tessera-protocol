@@ -118,6 +118,9 @@ fn signal_count_consts_match_circuits() {
     assert_eq!(SIGNED_SOLVENCY_N_PUBLIC, 4 + 2 * SIGNED_SOLVENCY_LEAVES); // 12
     assert_eq!(SIGNED_SOLVENCY_N_PUBLIC, 12);
     assert_eq!(RISK_SOLVENCY_N_PUBLIC, 5); // [root, total, reserves, conc, coll]
+    assert_eq!(UNIFIED_SOLVENCY_LEAVES, 4); // depth-2 demo: fixed member count
+    assert_eq!(UNIFIED_SOLVENCY_N_PUBLIC, 4 + 2 * UNIFIED_SOLVENCY_LEAVES + 2); // 14
+    assert_eq!(UNIFIED_SOLVENCY_N_PUBLIC, 14); // [root,total,reserves,epoch,Ax4,Ay4,conc,coll]
 }
 
 /// `ge_be` comparator edges: equal, just-below, just-above at the low byte,
