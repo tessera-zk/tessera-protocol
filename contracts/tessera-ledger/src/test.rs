@@ -709,6 +709,236 @@ fn risk_after_signed_latest_is_rejected_as_downgrade() {
     client.submit_risk_attestation(&rproof, &rsignals); // must panic #20
 }
 
+// ===== PRICED RESERVES: oracle-scaled legs (#64) =====
+
+/// On-chain mock oracle implementing the EXACT method the generated
+/// `OracleClient` calls (`get_price(feed_id) -> Option<(price, ledger)>`).
+/// Scripted per test via set/clear_quote. Production uses a Reflector
+/// adapter with the identical method shape (NOT wired here).
+#[contracttype]
+enum MockKey {
+    Quote(u32),
+}
+
+#[contract]
+struct MockOracle;
+
+#[contractimpl]
+impl MockOracle {
+    pub fn set_quote(env: Env, feed_id: u32, price: i128, ledger: u32) {
+        env.storage()
+            .persistent()
+            .set(&MockKey::Quote(feed_id), &(price, ledger));
+    }
+    pub fn clear_quote(env: Env, feed_id: u32) {
+        env.storage().persistent().remove(&MockKey::Quote(feed_id));
+    }
+    pub fn get_price(env: Env, feed_id: u32) -> Option<(i128, u32)> {
+        env.storage().persistent().get(&MockKey::Quote(feed_id))
+    }
+}
+
+/// Deploy token + mint leg balances, register the mock oracle, deploy
+/// TesseraLedger, and pin oracle config (reflector=mock, staleness=100,
+/// feeds=[1,2]). Quotes are scripted per test against ledger 0 unless the
+/// test bumps the sequence.
+fn setup_priced(
+    env: &Env,
+    bal_a: i128,
+    bal_b: i128,
+) -> (
+    TesseraLedgerClient<'_>,
+    MockOracleClient<'_>,
+    Address,
+    Address,
+    Address,
+) {
+    env.mock_all_auths();
+
+    let sac_admin = Address::generate(env);
+    let sac = env.register_stellar_asset_contract_v2(sac_admin);
+    let token = sac.address();
+    let holder_a = Address::generate(env);
+    let holder_b = Address::generate(env);
+    StellarAssetClient::new(env, &token).mint(&holder_a, &bal_a);
+    StellarAssetClient::new(env, &token).mint(&holder_b, &bal_b);
+
+    let mock_id = env.register(MockOracle, ());
+    let mock = MockOracleClient::new(env, &mock_id);
+
+    let gov = Address::generate(env);
+    let id = env.register(TesseraLedger, (gov, token.clone()));
+    let client = TesseraLedgerClient::new(env, &id);
+    client.set_oracle_config(&mock_id, &100, &vec![env, 1u32, 2u32]);
+
+    (client, mock, token, holder_a, holder_b)
+}
+
+/// Build the two standard priced legs for holders with pre-minted balances.
+fn priced_legs(
+    env: &Env,
+    holder_a: &Address,
+    holder_b: &Address,
+    token: &Address,
+) -> Vec<PricedLeg> {
+    vec![
+        env,
+        PricedLeg { holder: holder_a.clone(), token: token.clone(), feed_id: 1 },
+        PricedLeg { holder: holder_b.clone(), token: token.clone(), feed_id: 2 },
+    ]
+}
+
+/// Gate hand-computed fixture: 100000 @ 1.0 + 1000000 @ 0.1234567 =
+/// 100000 + 123456 (truncated) = 223456 — MUST match the JS trial
+/// (`scripts/oracle_math.test.js`) exactly, on-chain.
+#[test]
+fn priced_hand_aggregate_matches_trial() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0); // USDC @ 1.0, fresh
+    mock.set_quote(&2, &1_234_567, &0); // XLM @ 0.1234567, fresh
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    let epoch = client.submit_priced_attestation(&proof, &signals, &legs);
+    assert_eq!(epoch, 0);
+
+    let att = client.get_priced_attestation().expect("priced attestation stored");
+    assert_eq!(att.aggregate_reserves, 223_456);
+    assert_eq!(att.leg_count, 2);
+    assert_eq!(att.oldest_price_ledger, 0);
+    // Mirrors into Latest for inclusion binding, like the multi path.
+    let latest = client.get_attestation().expect("Latest mirrored");
+    assert_eq!(latest.bound_reserves, 223_456);
+    assert_eq!(latest.root_hash, BytesN::from_array(&env, &fx::SOLVENCY_PUBLIC[0]));
+}
+
+/// Stale quote on the second leg (age 101 > 100): `StalePrice` (#23), even
+/// though the first leg is fresh — one stale leg aborts the whole submit.
+#[test]
+#[should_panic(expected = "Error(Contract, #23)")]
+fn priced_stale_quote_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    env.ledger().set_sequence_number(101);
+    mock.set_quote(&1, &10_000_000, &101); // fresh at current ledger
+    mock.set_quote(&2, &1_234_567, &0); // age 101 -> stale
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #23
+}
+
+/// No quote for a pinned feed: `MissingPrice` (#25) — never a default price.
+#[test]
+#[should_panic(expected = "Error(Contract, #25)")]
+fn priced_missing_quote_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.clear_quote(&2); // feed 2 pinned but quoteless
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #25
+}
+
+/// Negative quote: `BadPrice` (#24).
+#[test]
+#[should_panic(expected = "Error(Contract, #24)")]
+fn priced_negative_quote_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &-1_000_000, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #24
+}
+
+/// Zero quote: `BadPrice` (#24) — a zero price would zero the backing.
+#[test]
+#[should_panic(expected = "Error(Contract, #24)")]
+fn priced_zero_price_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &0, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #24
+}
+
+/// Leg references a feed ID never pinned at config time: `UnknownPriceFeed`
+/// (#26) — even with a quote present for it on the oracle.
+#[test]
+#[should_panic(expected = "Error(Contract, #26)")]
+fn priced_unknown_feed_is_rejected() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&9, &10_000_000, &0); // quoted but never pinned
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let mut legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    legs.set(
+        1,
+        PricedLeg { holder: holder_b.clone(), token: token.clone(), feed_id: 9 },
+    );
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #26
+}
+
+/// `balance * price` overflowing i128: explicit `ReserveOverflow` (#15),
+/// never a saturating fallback (FIX 5 parity).
+#[test]
+#[should_panic(expected = "Error(Contract, #15)")]
+fn priced_overflow_is_explicit() {
+    let env = Env::default();
+    let huge = 10i128.pow(30);
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, huge, 0);
+
+    mock.set_quote(&1, &10i128.pow(31), &0); // 1e30 * 1e31 = 1e61 overflows
+    mock.set_quote(&2, &10_000_000, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client.submit_priced_attestation(&proof, &signals, &legs); // must panic #15
+}
+
+/// No authorizations at all: the first leg holder's `require_auth` panics.
+/// Per-holder control is load-bearing on the priced path too.
+#[test]
+#[should_panic]
+fn priced_without_holder_auth_fails() {
+    let env = Env::default();
+    let (client, mock, token, holder_a, holder_b) = setup_priced(&env, 100_000, 1_000_000);
+
+    mock.set_quote(&1, &10_000_000, &0);
+    mock.set_quote(&2, &1_234_567, &0);
+
+    let proof = BytesN::from_array(&env, &fx::SOLVENCY_PROOF);
+    let signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
+    let legs = priced_legs(&env, &holder_a, &holder_b, &token);
+    client
+        .set_auths(&[])
+        .submit_priced_attestation(&proof, &signals, &legs); // must panic
+}
+
 // ===== UPGRADE 2: MULTI-ASSET / MULTI-HOLDER RESERVES =====
 
 /// Mint `amount` of a fresh SAC to `holder`; return the token address.
