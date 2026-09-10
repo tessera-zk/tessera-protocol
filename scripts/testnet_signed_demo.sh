@@ -14,6 +14,12 @@
 # identities tessera-member-a..d (generate+fund with `stellar keys generate <id>
 # --network testnet --fund`), and contracts/artifacts/signed-incircuit-args.json
 # (from contracts/scripts/convert_signed.js). BytesN args are hex WITHOUT 0x.
+#
+# EXECUTED LIVE on the fresh Tessera contract 2026-09-10 (#61):
+# CONTRACT=CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ —
+# keys L4603213–19, honest submit 66cbf46f… (L4603225, epoch 2), omission #10 /
+# replay #17 / tamper #1 exact, risk-after-signed #20 (sequencing lesson).
+# Full record: evidence/advanced-2026-09-10.md.
 # ---------------------------------------------------------------------------
 set -uo pipefail
 export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:$PATH"
