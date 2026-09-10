@@ -27,12 +27,18 @@ Count check: 4 + 2*4 + 2 = 14 = `nPublic`. Matches
 > and `snarkjs groth16 verify` returns OK. This order is now load-bearing —
 > `submit_unified_attestation` (#56) must consume it exactly.
 
-## Contract wiring checklist (NOT-YET — do not implement without these)
+## Contract wiring checklist (implemented #57 — `submit_unified_attestation`)
 
-- [ ] Canonical `< r` range assert on all 14 signals before `g1_mul` (M3 rule)
-- [ ] `(Ax[i], Ay[i])` pinned position-by-position to `register_customer_key`
-      order (Error #10 pattern, FIX 1)
-- [ ] `epoch` strictly greater than `signed_epoch()` (Error #14 pattern, FIX 4)
-- [ ] `treasury <= live aggregate` cross-contract read + per-holder
+- [x] Canonical `< r` range assert on all 14 signals before `g1_mul` (M3 rule)
+- [x] `(Ax[i], Ay[i])` pinned position-by-position to `register_customer_key`
+      order (Error #10 pattern, FIX 1) — 8 contract tests in `test.rs`
+- [x] `epoch` strictly greater than the last accepted UNIFIED epoch (Error #14
+      pattern, FIX 4) — deliberate deviation from this doc's draft: the
+      unified circuit has its OWN freshness counter (`UnifiedEpoch` /
+      `unified_epoch()`), independent of `signed_epoch()`, because the two
+      circuits have independent epoch namespaces (different roots per family).
+      Sharing one counter would let a signed submit block a unified submit.
+- [x] `treasury <= live aggregate` cross-contract read + per-holder
       `require_auth` (reserve-binding rule, M4/UPGRADE 2)
-- [ ] Risk bounds read as public inputs (no issuer override path)
+- [x] Risk bounds read as public inputs (no issuer override path) + contract
+      policy floor parity (`maxConcBps <= 4000`, `minCollBps >= 10500`, #21)
