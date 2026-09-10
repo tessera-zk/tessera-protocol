@@ -21,8 +21,8 @@ attestation whose declared treasury exceeds it. So the chain enforces
 ## Highlights (all verified on Stellar testnet, Protocol 27)
 
 Current fixed contract (all advanced upgrades plus adversarial-audit fixes):
-[`CBTN433JB2LSFHPLGEZTLEW43IKKXPKN5AYHJVMLKO4NN6EQNBVDRJP4`](https://stellar.expert/explorer/testnet/contract/CBTN433JB2LSFHPLGEZTLEW43IKKXPKN5AYHJVMLKO4NN6EQNBVDRJP4)
-· `25/25` contract tests pass.
+[`CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ`](https://stellar.expert/explorer/testnet/contract/CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ)
+· `62/62` contract tests pass.
 
 - **IN-CIRCUIT non-omission (FIX 1): VERIFIED.** Each member's Baby-JubJub
   EdDSA signature is verified **inside the SNARK** and each leaf's signer key is
