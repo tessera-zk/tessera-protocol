@@ -18,14 +18,86 @@ mod groth16;
 
 use groth16::{verify, Groth16Proof, VerificationKey};
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short, token,
-    Address, Bytes, BytesN, Env, Vec, crypto::bn254::Bn254Fr,
+    contract, contractclient, contracterror, contractimpl, contracttype, panic_with_error,
+    symbol_short, token, Address, Bytes, BytesN, Env, Vec, crypto::bn254::Bn254Fr,
 };
 
 /// Domain separator prefix for the per-member signed-leaf message. Bound into the
 /// bytes each member's ed25519 key signs so a signature for this scheme cannot be
 /// replayed as a signature for anything else. Exactly 17 bytes.
 const LEAF_DOMAIN: [u8; 17] = *b"TESSERA-MEMBER-V1";
+
+/// Fixed-point denominator for oracle-quoted prices (#64: mirrors
+/// `PRICE_DENOMINATOR` in `frontend/lib/oracle.ts` and `DEN` in
+/// `scripts/mock_reflector.js`). A quote is `price_num / 10^7` units of the
+/// reserve denomination per token unit; scaling truncates toward zero.
+const PRICE_DENOMINATOR: i128 = 10_000_000;
+
+/// Minimal oracle interface for priced reserve legs (#64). The production
+/// Reflector contract is fronted by an adapter exposing this shape; tests use
+/// an on-chain mock implementing the identical method. `None` = no quote for
+/// the feed (missing — rejected, never defaulted).
+#[contractclient(name = "OracleClient")]
+pub trait OracleContract {
+    /// Latest quote for `feed_id`: `(price_num, price_ledger)`, or `None`.
+    fn get_price(env: Env, feed_id: u32) -> Option<(i128, u32)>;
+}
+
+/// Oracle wiring config (priced-reserve path, #64). Feed IDs are pinned HERE —
+/// legs can only reference listed feeds, and prices are read ONLY from the
+/// configured reflector address (no issuer-supplied oracle, no per-leg override).
+#[contracttype]
+#[derive(Clone)]
+pub struct OracleConfig {
+    /// Oracle contract (Reflector adapter in production, mock in tests).
+    pub reflector: Address,
+    /// Max quote age in ledgers (`current - price_ledger <= max` else stale).
+    pub max_staleness_ledgers: u32,
+    /// Pinned price-feed IDs this deployment accepts.
+    pub feeds: Vec<u32>,
+}
+
+/// One oracle-priced reserve leg (#64). Unlike `ReserveLeg` (same-unit 1:1
+/// only, FIX 2 — that path is UNTOUCHED), the contribution here is
+/// `balance * price(feed_id) / PRICE_DENOMINATOR`, with the quote's freshness
+/// enforced on-chain. Priced legs travel the NEW entrypoint only.
+#[contracttype]
+#[derive(Clone)]
+pub struct PricedLeg {
+    /// Account holding the token balance.
+    pub holder: Address,
+    /// Token contract (SAC) the balance is read from.
+    pub token: Address,
+    /// Price-feed ID, must be pinned in `OracleConfig.feeds`.
+    pub feed_id: u32,
+}
+
+/// A priced-reserve attestation (#64). Its existence proves the contract
+/// verified the solvency proof AND that the declared reserves were `<=` the
+/// summed, oracle-scaled, FRESH live balances of every priced leg, with EVERY
+/// leg holder authorizing.
+#[contracttype]
+#[derive(Clone)]
+pub struct PricedAttestation {
+    /// Merkle-sum root hash (BN254 Fr, 32-byte big-endian).
+    pub root_hash: BytesN<32>,
+    /// Total liabilities carried in the root (BN254 Fr).
+    pub total_liabilities: BytesN<32>,
+    /// ZK-declared reserves figure (BN254 Fr).
+    pub reserves: BytesN<32>,
+    /// Sum of oracle-scaled live leg balances (reserve-denomination units).
+    pub aggregate_reserves: i128,
+    /// Number of priced legs aggregated.
+    pub leg_count: u32,
+    /// Oldest quote ledger across legs (weakest freshness link, auditable).
+    pub oldest_price_ledger: u32,
+    /// Ledger sequence at which balances/quotes were read and bound.
+    pub bound_ledger: u32,
+    /// Ledger timestamp at verification.
+    pub timestamp: u64,
+    /// Monotonic attestation epoch (0-based).
+    pub epoch: u32,
+}
 
 // Compile-time verification keys (real BN254 VKs, big-endian byte layout).
 #[allow(dead_code)]
@@ -304,6 +376,10 @@ enum DataKey {
     ReserveLegs,
     /// Latest multi-asset/multi-holder attestation (UPGRADE 2).
     MultiLatest,
+    /// Oracle wiring config for the priced-reserve path (#64).
+    OracleConfig,
+    /// Latest oracle-priced attestation (#64).
+    PricedLatest,
     /// Root hashes already accepted by any attestation path. Prevents replaying
     /// an old proof/root as a fresh attestation when the circuit has no epoch
     /// public input (fast freshness hardening for base/risk/multi).
@@ -374,6 +450,18 @@ pub enum Error {
     /// A Groth16 public signal was not a canonical BN254 field element (`>= r`),
     /// so it could alias a canonical value via silent mod-reduction (FIX 5 / M3).
     NonCanonicalSignal = 16,
+    /// An oracle quote was older than the configured staleness bound (#64).
+    StalePrice = 23,
+    /// An oracle quote was non-positive (zero or negative, #64). No default,
+    /// no 1:1 fallback — rejected.
+    BadPrice = 24,
+    /// The oracle returned no quote for a pinned feed (#64). Rejected — a
+    /// missing price never defaults.
+    MissingPrice = 25,
+    /// A priced leg referenced a feed ID not pinned in `OracleConfig` (#64).
+    UnknownPriceFeed = 26,
+    /// The priced-reserve path was called before `set_oracle_config` (#64).
+    OracleNotConfigured = 27,
 }
 
 fn map_g16(e: groth16::Groth16Error) -> Error {
@@ -1528,6 +1616,201 @@ env.events().publish(
     /// The latest multi-asset/multi-holder attestation, if any (UPGRADE 2).
     pub fn get_multi_attestation(env: Env) -> Option<MultiAttestation> {
         env.storage().persistent().get(&DataKey::MultiLatest)
+    }
+
+    // ===== PRICED RESERVES: oracle-scaled legs (issue #64) =====
+
+    /// Pin the oracle wiring for the priced-reserve path: which contract to
+    /// read quotes from, how old a quote may be, and which feed IDs legs may
+    /// reference. Requires the primary (constructor-bound) reserve holder to
+    /// authorize, so the price source cannot be rigged by a non-controlling
+    /// caller. An empty feed list is rejected (a priced path with no feeds
+    /// could only ever fail closed — fail at config time instead).
+    ///
+    /// Emits `treasury/oracle_config` with `(reflector, max_staleness, feeds)`.
+    pub fn set_oracle_config(
+        env: Env,
+        reflector: Address,
+        max_staleness_ledgers: u32,
+        feeds: Vec<u32>,
+    ) {
+        if feeds.is_empty() {
+            panic_with_error!(&env, Error::UnknownPriceFeed);
+        }
+        let config: ReserveConfig = match env.storage().instance().get(&DataKey::Config) {
+            Some(c) => c,
+            None => panic_with_error!(&env, Error::NotConfigured),
+        };
+        config.reserve_holder.require_auth();
+        env.storage().persistent().set(
+            &DataKey::OracleConfig,
+            &OracleConfig {
+                reflector: reflector.clone(),
+                max_staleness_ledgers,
+                feeds: feeds.clone(),
+            },
+        );
+        env.events().publish(
+            (symbol_short!("treasury"), symbol_short!("oracle_cfg")),
+            (reflector, max_staleness_ledgers, feeds.len()),
+        );
+    }
+
+    /// The configured oracle wiring, if any (#64).
+    pub fn oracle_config(env: Env) -> Option<OracleConfig> {
+        env.storage().persistent().get(&DataKey::OracleConfig)
+    }
+
+    /// Verify a base health proof and bind it to the AGGREGATE of
+    /// oracle-priced reserve legs (#64). Gate semantics (mirrors the trialed
+    /// `frontend/lib/oracle.ts` exactly):
+    ///   * contribution = `balance * price_num / 10^7`, truncating (Rust i128
+    ///     division truncates toward zero, same as the JS `BigInt` trial);
+    ///   * `current_ledger - price_ledger > max_staleness` → `StalePrice` (#23);
+    ///   * `price_num <= 0` → `BadPrice` (#24); no quote → `MissingPrice` (#25);
+    ///   * unpinned `feed_id` → `UnknownPriceFeed` (#26);
+    ///   * every `checked_*` overflow → `ReserveOverflow` (#15, explicit);
+    ///   * EVERY leg holder authorizes (`require_auth` per holder).
+    ///
+    /// The same-unit `submit_multi_attestation` path is UNTOUCHED (audited
+    /// behavior preserved); priced legs travel this entrypoint only. Like the
+    /// multi path, a weaker root cannot overwrite a signed Latest (#20), and
+    /// the certified root mirrors into `Latest` for `verify_inclusion`.
+    pub fn submit_priced_attestation(
+        env: Env,
+        proof: BytesN<256>,
+        public_signals: Vec<BytesN<32>>,
+        legs: Vec<PricedLeg>,
+    ) -> u32 {
+        if public_signals.len() != SOLVENCY_N_PUBLIC {
+            panic_with_error!(&env, Error::MalformedPublicInputs);
+        }
+        assert_canonical_signals(&env, &public_signals);
+
+        let vk = solvency_vk(&env);
+        let parsed = Groth16Proof::from_bytes(&env, &proof);
+        let fr = to_fr_vec(&env, &public_signals);
+        if let Err(e) = verify(&env, &vk, &parsed, &fr) {
+            panic_with_error!(&env, map_g16(e));
+        }
+
+        let root_hash = public_signals.get_unchecked(0);
+        let total_liabilities = public_signals.get_unchecked(1);
+        let reserves = public_signals.get_unchecked(2);
+
+        reject_seen_root(&env, &root_hash);
+        reject_weak_downgrade(&env);
+
+        if !ge_be(&reserves, &total_liabilities) {
+            panic_with_error!(&env, Error::Insolvent);
+        }
+
+        if legs.is_empty() {
+            panic_with_error!(&env, Error::NoReserveLegs);
+        }
+        let oracle: OracleConfig = match env.storage().persistent().get(&DataKey::OracleConfig) {
+            Some(c) => c,
+            None => panic_with_error!(&env, Error::OracleNotConfigured),
+        };
+
+        let declared_reserves = match be32_to_i128(&reserves) {
+            Some(v) => v,
+            None => panic_with_error!(&env, Error::ReservesOutOfRange),
+        };
+
+        // CONTROL of every leg + oracle-scaled live aggregation. Freshness is
+        // read against the CURRENT ledger (quote age is a chain fact, not a
+        // prover claim).
+        let current_ledger = env.ledger().sequence();
+        let oracle_client = OracleClient::new(&env, &oracle.reflector);
+        let mut aggregate: i128 = 0;
+        let mut oldest_price_ledger: u32 = u32::MAX;
+        for leg in legs.iter() {
+            // Each leg holder must authorize: control of ALL reserve accounts.
+            leg.holder.require_auth();
+            if !oracle.feeds.contains(&leg.feed_id) {
+                panic_with_error!(&env, Error::UnknownPriceFeed);
+            }
+            let (price_num, price_ledger) = match oracle_client.get_price(&leg.feed_id) {
+                Some(q) => q,
+                None => panic_with_error!(&env, Error::MissingPrice),
+            };
+            if current_ledger.saturating_sub(price_ledger) > oracle.max_staleness_ledgers {
+                panic_with_error!(&env, Error::StalePrice);
+            }
+            if price_num <= 0 {
+                panic_with_error!(&env, Error::BadPrice);
+            }
+            if price_ledger < oldest_price_ledger {
+                oldest_price_ledger = price_ledger;
+            }
+            let bal = token::TokenClient::new(&env, &leg.token).balance(&leg.holder);
+            // Truncating scale (parity with the JS trial); overflow explicit.
+            let scaled = match bal.checked_mul(price_num) {
+                Some(v) => v,
+                None => panic_with_error!(&env, Error::ReserveOverflow),
+            } / PRICE_DENOMINATOR;
+            aggregate = match aggregate.checked_add(scaled) {
+                Some(v) => v,
+                None => panic_with_error!(&env, Error::ReserveOverflow),
+            };
+        }
+
+        if declared_reserves > aggregate {
+            panic_with_error!(&env, Error::ReserveUnbacked);
+        }
+
+        let bound_ledger = current_ledger;
+        let store = env.storage().persistent();
+        let epoch: u32 = store.get(&DataKey::Epoch).unwrap_or(0);
+
+        let att = PricedAttestation {
+            root_hash: root_hash.clone(),
+            total_liabilities: total_liabilities.clone(),
+            reserves: reserves.clone(),
+            aggregate_reserves: aggregate,
+            leg_count: legs.len(),
+            oldest_price_ledger,
+            bound_ledger,
+            timestamp: env.ledger().timestamp(),
+            epoch,
+        };
+        store.set(&DataKey::PricedLatest, &att);
+        // FIX 4 (M2): mirror the certified-solvent root into Latest so
+        // `verify_inclusion` binds to THIS attestation's root (same pattern as
+        // the multi path; first leg as the nominal holder/token).
+        {
+            let first = legs.get_unchecked(0);
+            store.set(
+                &DataKey::Latest,
+                &Attestation {
+                    root_hash: root_hash.clone(),
+                    total_liabilities,
+                    reserves,
+                    reserve_holder: first.holder.clone(),
+                    reserve_token: first.token.clone(),
+                    bound_reserves: aggregate,
+                    bound_ledger,
+                    timestamp: env.ledger().timestamp(),
+                    epoch,
+                    control_proven: true,
+                    non_omission_in_circuit: false,
+                },
+            );
+        }
+        mark_root_seen(&env, &root_hash);
+        store.set(&DataKey::Epoch, &(epoch + 1));
+
+        env.events().publish(
+            (symbol_short!("ledger"), symbol_short!("priced")),
+            (epoch, root_hash, aggregate),
+        );
+        epoch
+    }
+
+    /// The latest oracle-priced attestation, if any (#64).
+    pub fn get_priced_attestation(env: Env) -> Option<PricedAttestation> {
+        env.storage().persistent().get(&DataKey::PricedLatest)
     }
 }
 
