@@ -687,6 +687,26 @@ fn unified_wrong_signal_count_is_rejected() {
     client.submit_unified_attestation(&proof, &signals); // must panic #2
 }
 
+/// Freshness ADVANCE (companion to the stale/replay negatives): submitting the
+/// epoch-1 book after epoch-0 succeeds and moves the unified counter to 1.
+#[test]
+fn unified_epoch_advance_accepts_greater() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let e0_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let e0_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    assert_eq!(client.submit_unified_attestation(&e0_proof, &e0_signals), 0);
+    assert_eq!(client.unified_epoch(), Some(0));
+
+    let e1_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_E1_PROOF);
+    let e1_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_E1_PUBLIC);
+    assert_eq!(client.submit_unified_attestation(&e1_proof, &e1_signals), 1);
+    assert_eq!(client.unified_epoch(), Some(1));
+    assert_eq!(client.epoch_count(), 2);
+}
+
 /// LIVE FINDING #61 (testnet 2026-09-10): after a signed (non-omission)
 /// Latest is stored, a risk submit is rejected with `WeakAttestationDowngrade`
 /// (#20) — the contract never lets a weaker root overwrite a stronger bound
@@ -1084,26 +1104,6 @@ fn non_canonical_signal_is_rejected() {
     let mut signals = public_vec(&env, &fx::SOLVENCY_PUBLIC);
     signals.set(0, BytesN::from_array(&env, &BN254_FR_MODULUS));
     client.submit_attestation(&proof, &signals); // must panic #16
-}
-
-/// Freshness ADVANCE (companion to the stale/replay negatives): submitting the
-/// epoch-1 book after epoch-0 succeeds and moves the unified counter to 1.
-#[test]
-fn unified_epoch_advance_accepts_greater() {
-    let env = Env::default();
-    let (client, _h) = setup(&env, UNIFIED_RESERVES);
-    register_unified_keys(&env, &client);
-
-    let e0_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
-    let e0_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
-    assert_eq!(client.submit_unified_attestation(&e0_proof, &e0_signals), 0);
-    assert_eq!(client.unified_epoch(), Some(0));
-
-    let e1_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_E1_PROOF);
-    let e1_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_E1_PUBLIC);
-    assert_eq!(client.submit_unified_attestation(&e1_proof, &e1_signals), 1);
-    assert_eq!(client.unified_epoch(), Some(1));
-    assert_eq!(client.epoch_count(), 2);
 }
 
 // ===== UPGRADE 2: MULTI-ASSET / MULTI-HOLDER RESERVES =====
