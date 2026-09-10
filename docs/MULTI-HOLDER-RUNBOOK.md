@@ -16,20 +16,22 @@ each reserve account independently authorized this attestation at this ledger.
 
 ## Preconditions
 
-- Contract from ADVANCED-STATUS (`CDGNPPPT4...`, or fresh deploy).
+- Fresh Tessera contract `CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ`
+  (the `CDGNPPPT4...` ADVANCED-STATUS deployment is superseded history — never
+  reuse it; live legs from #59 are already configured on the fresh instance).
 - Two funded testnet accounts: `HOLDER_A`, `HOLDER_B` (see
-  `scripts/testnet_multi_holder_demo.sh` env).
+  `scripts/testnet_multi_holder_demo.sh` env; #59 used `tessera-holder-a/b`).
 - Same-unit legs only (FIX 2): `set_reserve_legs` rejects non-1:1 with
-  Error #13. Cross-asset at real prices needs Reflector (issue #10, NOT-YET).
+  Error #13. Cross-asset at real prices needs the priced path (#64, mock-only).
 
 ## Steps
 
 ```bash
-export CONTRACT=CDGNPPPT4YSTUTZ4NFNKMWJXUEVHU5CPDR57EI644LBLKUQX2LOLYHTK
-export HOLDER_A=GBKY7FXTESEV6ON5FGMKOIB57OFFAXQT2BMBE2KEHYQPRAT4JQASNUJC
-export HOLDER_B=<second holder G...>
-export TOKEN_A=CCJZEZSWDJTBAVSPCNRWTDPB4DYHC22UW7D6TI65MX4CFTTD32LEHLFD
-export TOKEN_B=<second same-unit SAC C...>
+export CONTRACT=CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ
+export HOLDER_A=GB24OU652SNE7LEDDOFSSWU2BT3C46CC7HG4TLZDRN7TZJZU5GRQVMNZ
+export HOLDER_B=GC2XQDHWG6MG4FCIILSX34LGN666FFZUESINQDUGHUESSVDKMHKG7HDX
+export TOKEN_A=CDVAJVBYDHXI535W3ZA43XN7L2IL3XK2C5WQYCDJHDHUTW4NTGZVC2VS
+export TOKEN_B=<same-unit SAC C...>
 bash scripts/testnet_multi_holder_demo.sh
 ```
 
