@@ -196,7 +196,25 @@ Example (real, from `build/proofs/solvency_public.json`):
 The contract (`submit_signed_attestation`) pins `Ax[i] = signal 4+i` and
 `Ay[i] = signal 8+i` against the member-self-registered ordered key list.
 
-`nPublic`: solvency = 3, inclusion = 2, signed_solvency = 12, risk_solvency = 5.
+### `unified_solvency` (#55/#57) — `public.json` = `[rootHash, totalLiabilities, reserves, epoch, Ax[0..3], Ay[0..3], maxConcBps, minCollBps]`
+
+| Index | Signal | Type / meaning |
+|---|---|---|
+| 0 | `rootHash` | BN254 Fr — unified Merkle-sum root hash |
+| 1 | `totalLiabilities` | BN254 Fr — sum carried in the root |
+| 2 | `reserves` | BN254 Fr — attested reserves figure |
+| 3 | `epoch` | BN254 Fr — freshness epoch (strictly increasing per unified namespace, #57) |
+| 4..7 | `Ax[0..3]` | BN254 Fr — signer Baby-JubJub public-key x per leaf |
+| 8..11 | `Ay[0..3]` | BN254 Fr — signer Baby-JubJub public-key y per leaf |
+| 12 | `maxConcBps` | BN254 Fr — per-leaf concentration cap, contract floor `<= 4000` |
+| 13 | `minCollBps` | BN254 Fr — collateral floor, contract floor `>= 10500` |
+
+The contract (`submit_unified_attestation`) pins keys exactly like the signed
+path and additionally enforces the risk-policy floors on signals 12–13.
+Proven end-to-end: `bash scripts/prove_unified_positive.sh` (pass=2 fail=0,
+record `docs/UNIFIED-POSITIVE-CONTROL.md`).
+
+`nPublic`: solvency = 3, inclusion = 2, signed_solvency = 12, risk_solvency = 5, unified_solvency = 14.
 `curve: bn128`, `protocol: groth16` (confirmed in `circuit-keys/vk_*.json`).
 
 ---

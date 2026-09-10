@@ -30,8 +30,16 @@ const DEPTH = 2;
 const N_LEAVES = 1 << DEPTH; // 4
 
 const BALANCES = [8000n, 7000n, 6000n, 7000n]; // total 28000
-const NONCES = [11n, 22n, 33n, 44n];
-const EPOCH = 0n;
+// Epoch override for multi-epoch fixtures (#57): UNIFIED_EPOCH=1 emits
+// unified_positive_e1.json (different sigs + root, same keys). Default 0 keeps
+// the #55-committed root byte-identical (CI pins it).
+const EPOCH = BigInt(process.env.UNIFIED_EPOCH || 0);
+const EPOCH_TAG = EPOCH === 0n ? "" : `_e${EPOCH}`;
+// Epoch-scoped nonces: identical books per epoch would share one root, and the
+// on-chain seen-root guard would fire before the epoch-freshness check —
+// useless for the #14 stale-epoch test. Offsetting nonces per epoch gives each
+// epoch a distinct root (keys unchanged, so the key pin still passes).
+const NONCES = [11n, 22n, 33n, 44n].map((n) => n + EPOCH * 1000n);
 const RESERVES = 30000n;
 const MAX_CONC_BPS = 4000n; // 40% per-leaf cap: worst leaf 8000/28000 = 28.6%
 const MIN_COLL_BPS = 10500n; // 105% floor: 28000*1.05 = 29400 <= 30000
@@ -132,10 +140,54 @@ function be32(v) {
   const write = (name, obj) =>
     fs.writeFileSync(path.join(outDir, name),
       JSON.stringify(obj, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2));
-  write("unified_positive.json", input);
+  write(`unified_positive${EPOCH_TAG}.json`, input);
+
+  // ---- OMISSION variant (#57): drop member C (slot 2), substitute an
+  //      issuer-controlled filler key signing the same-shaped leaf. The witness
+  //      is SATISFIABLE (all 4 sigs check) so a valid proof exists — but slot-2
+  //      public key != registered C key, so the contract key pin REJECTS it
+  //      (Error #10). Only emitted for the epoch-0 book (the #10 test book).
+  // ---- Public artifact (epoch 0 only): NO private keys, NO raw signatures.
+  if (EPOCH === 0n) {
+    const fPrv = crypto.createHash("sha256").update("tessera-unified-filler", "ascii").digest();
+    const fPub = eddsa.prv2pub(fPrv);
+    const fAx = eddsa.F.toObject(fPub[0]);
+    const fAy = eddsa.F.toObject(fPub[1]);
+    const fBalance = BALANCES[2], fNonce = 999999n;
+    const fM = H([EPOCH, fBalance, fNonce]);
+    const fSig = eddsa.signPoseidon(fPrv, eddsa.F.e(fM));
+    if (!eddsa.verifyPoseidon(eddsa.F.e(fM), fSig, fPub)) throw new Error("filler self-verify failed");
+    const fAcct = H([fAx, fAy, fNonce]);
+    const omUsers = users.map((u, i) => i === 2
+      ? { balance: fBalance, nonce: fNonce, Ax: fAx, Ay: fAy,
+          S: fSig.S, R8x: eddsa.F.toObject(fSig.R8[0]), R8y: eddsa.F.toObject(fSig.R8[1]),
+          acctCommit: fAcct }
+      : { balance: u.balance, nonce: u.nonce, Ax: u.Ax, Ay: u.Ay,
+          S: signed[i].S, R8x: signed[i].R8x, R8y: signed[i].R8y, acctCommit: u.acctCommit });
+    const omTree = buildTree(omUsers.map((o) => ({ acctCommit: o.acctCommit, balance: o.balance })));
+    write("unified_omitted.json", {
+      rootHash: omTree.rootHash,
+      totalLiabilities: omTree.rootSum,
+      reserves: RESERVES,
+      epoch: EPOCH,
+      Ax: omUsers.map((o) => o.Ax),
+      Ay: omUsers.map((o) => o.Ay),
+      maxConcBps: MAX_CONC_BPS,
+      minCollBps: MIN_COLL_BPS,
+      balances: omUsers.map((o) => o.balance),
+      nonces: omUsers.map((o) => o.nonce),
+      S: omUsers.map((o) => o.S),
+      R8x: omUsers.map((o) => o.R8x),
+      R8y: omUsers.map((o) => o.R8y),
+      acctCommitUnused: omUsers.map(() => 0n),
+    });
+    console.log("  omitted root =", omTree.rootHash.toString(), "(slot-2 filler key)");
+  }
 
   // Public artifact: NO private keys, NO raw signatures — root, totals, member
   // public keys, and per-leaf message hashes (enough to re-verify off-circuit).
+  // Epoch-0 book only: the committed artifact (CI-pinned) must never move.
+  if (EPOCH === 0n) {
   const artDir = path.join(__dirname, "..", "contracts", "artifacts");
   fs.mkdirSync(artDir, { recursive: true });
   const manifest = {
@@ -159,9 +211,10 @@ function be32(v) {
     })),
   };
   fs.writeFileSync(path.join(artDir, "unified-positive.json"), JSON.stringify(manifest, null, 2));
+  } // end epoch-0-only artifact
 
-  console.log("Unified positive-control input built (#55).");
+  console.log(`Unified positive-control input built (#55/#57, epoch ${EPOCH}).`);
   console.log("  root  =", tree.rootHash.toString());
   console.log("  total =", totalLiabilities.toString(), " reserves =", RESERVES.toString());
-  console.log("  wrote build/inputs/unified_positive.json + contracts/artifacts/unified-positive.json");
+  console.log(`  wrote build/inputs/unified_positive${EPOCH_TAG}.json` + (EPOCH === 0n ? " + contracts/artifacts/unified-positive.json" : ""));
 })().catch((e) => { console.error(e); process.exit(1); });

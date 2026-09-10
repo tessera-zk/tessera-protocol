@@ -27,8 +27,14 @@ mod rfx {
     include!("risk_fixtures.rs");
 }
 
+mod ufx {
+    include!("unified_fixtures.rs");
+}
+
 /// Reserves carried in the in-circuit signed_solvency fixture (public signal 2).
 const SIGNED_RESERVES: i128 = 30_000;
+/// Reserves carried in the unified_solvency fixtures (public signal 2): 30000.
+const UNIFIED_RESERVES: i128 = 30_000;
 /// Reserves carried in the risk_solvency fixture (public signal 2): 118800.
 const RISK_RESERVES: i128 = 118_800;
 
@@ -534,6 +540,151 @@ fn risk_tampered_proof_is_rejected() {
     let proof = BytesN::from_array(&env, &rfx::RISK_SOLVENCY_PROOF_TAMPERED);
     let signals = public_vec(&env, &rfx::RISK_SOLVENCY_PUBLIC);
     client.submit_risk_attestation(&proof, &signals); // must panic
+}
+
+// ===== UNIFIED CIRCUIT: health + non-omission + risk in one proof (#57) =====
+
+/// Every customer self-registers their unified-circuit Baby-JubJub key (== the
+/// honest unified proof's public signer keys) under a distinct address.
+fn register_unified_keys(env: &Env, client: &TesseraLedgerClient) {
+    for i in 0..4usize {
+        let customer = Address::generate(env);
+        client.register_customer_key(
+            &customer,
+            &BytesN::from_array(env, &ufx::UNIFIED_REGISTERED_AX[i]),
+            &BytesN::from_array(env, &ufx::UNIFIED_REGISTERED_AY[i]),
+        );
+    }
+}
+
+/// Honest path: one on-chain proof certifies health (non-negative, correct sum,
+/// total <= reserves), non-omission (4 real in-circuit signatures pinned to the
+/// self-registered keys), AND risk bounds (40% conc / 105% coll). Stores with
+/// `non_omission_in_circuit = true` and advances the unified freshness counter.
+#[test]
+fn unified_honest_book_verifies_and_flags_all_properties() {
+    let env = Env::default();
+    env.ledger().set_timestamp(1_700_000_000);
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+
+    register_unified_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    assert_eq!(signals.len(), 14);
+    let epoch = client.submit_unified_attestation(&proof, &signals);
+    assert_eq!(epoch, 0);
+
+    let att = client.get_attestation().expect("stored");
+    assert!(att.non_omission_in_circuit, "unified proof is non-omitting");
+    assert!(att.control_proven);
+    assert_eq!(att.bound_reserves, UNIFIED_RESERVES);
+    assert_eq!(att.root_hash, BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC[0]));
+    assert_eq!(att.total_liabilities, BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC[1]));
+    assert_eq!(client.unified_epoch(), Some(0));
+    assert_eq!(client.epoch_count(), 1);
+}
+
+/// OMISSION rejected: valid unified proof, but slot-2 public key is the
+/// issuer's filler — the FIX-1 pin fires `RegisteredSetMismatch` (#10).
+#[test]
+#[should_panic(expected = "Error(Contract, #10)")]
+fn unified_omission_is_rejected_on_chain() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_OMITTED_PROOF);
+    let signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_OMITTED_PUBLIC);
+    client.submit_unified_attestation(&proof, &signals); // must panic #10
+}
+
+/// No registered key list yet: rejected (`RegisteredSetNotSet`, #11).
+#[test]
+#[should_panic(expected = "Error(Contract, #11)")]
+fn unified_without_registered_keys_panics() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    client.submit_unified_attestation(&proof, &signals); // must panic #11
+}
+
+/// Tampered unified proof fails the pairing check; nothing is stored.
+#[test]
+#[should_panic]
+fn unified_tampered_proof_is_rejected() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF_TAMPERED);
+    let signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    client.submit_unified_attestation(&proof, &signals); // must panic
+}
+
+/// STALE epoch rejected (#14): after the epoch-1 book is accepted, the honest
+/// epoch-0 book (different root so the seen-root guard passes, same keys so
+/// the key pin passes) fails the unified freshness check.
+#[test]
+#[should_panic(expected = "Error(Contract, #14)")]
+fn unified_stale_epoch_is_rejected() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let e1_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_E1_PROOF);
+    let e1_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_E1_PUBLIC);
+    client.submit_unified_attestation(&e1_proof, &e1_signals); // epoch 1 accepted
+    assert_eq!(client.unified_epoch(), Some(1));
+
+    let e0_proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let e0_signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    client.submit_unified_attestation(&e0_proof, &e0_signals); // stale -> #14
+}
+
+/// Same unified root replayed: the seen-root guard fires (#17) even though the
+/// proof itself is valid.
+#[test]
+#[should_panic(expected = "Error(Contract, #17)")]
+fn unified_same_root_replay_is_rejected() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    client.submit_unified_attestation(&proof, &signals);
+    client.submit_unified_attestation(&proof, &signals); // replay -> #17
+}
+
+/// Valid unified proof but declared reserves (30000) exceed the real balance:
+/// rejected (`ReserveUnbacked`, #5), nothing stored.
+#[test]
+#[should_panic(expected = "Error(Contract, #5)")]
+fn unified_unbacked_reserves_are_rejected() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, 1_000);
+    register_unified_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    client.submit_unified_attestation(&proof, &signals); // must panic #5
+}
+
+/// Wrong signal count (13 instead of 14): rejected (`MalformedPublicInputs`, #2).
+#[test]
+#[should_panic(expected = "Error(Contract, #2)")]
+fn unified_wrong_signal_count_is_rejected() {
+    let env = Env::default();
+    let (client, _h) = setup(&env, UNIFIED_RESERVES);
+    register_unified_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ufx::UNIFIED_SOLVENCY_PROOF);
+    let mut signals = public_vec(&env, &ufx::UNIFIED_SOLVENCY_PUBLIC);
+    signals.pop_back();
+    client.submit_unified_attestation(&proof, &signals); // must panic #2
 }
 
 // ===== UPGRADE 2: MULTI-ASSET / MULTI-HOLDER RESERVES =====
