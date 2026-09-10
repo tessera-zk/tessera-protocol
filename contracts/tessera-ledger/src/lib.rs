@@ -1651,7 +1651,7 @@ env.events().publish(
             },
         );
         env.events().publish(
-            (symbol_short!("treasury"), symbol_short!("oracle_cfg")),
+            (symbol_short!("treasury"), symbol_short!("oracfg")),
             (reflector, max_staleness_ledgers, feeds.len()),
         );
     }
