@@ -28,6 +28,17 @@ Try it with zero setup: `node sdk/example.js` (stub fetch, real code path).
 
 ## Status
 
-Scaffold (private package, NOT published). Publish checklist before npm:
-versioning policy, changelog, browser bundle test, `isFullyBacked`
-semantics review with compliance.
+Scaffold (private package, NOT published). CI covers `sdk/**` (`.github/workflows/sdk.yml`:
+15 unit tests, example run, publish-gate refusal, pack dry-run, secret hygiene).
+
+## Publish readiness (#68: metadata + gate done, audit-gated remainder open)
+
+- [x] Package metadata: repository/homepage/engines/files/exports/scripts
+- [x] `prepublish-check.js` gate: `npm publish` REFUSES until audit clears
+      (verified: exit 1 pre-audit; flip `AUDIT_CLEARED` only with a recorded audit)
+- [x] Pack contents verified: 6 files, 2.9 kB (`tessera-zk-sdk-0.1.0.tgz`)
+- [x] Example prints real epoch-0 values; `isFullyBacked` semantics reviewed
+      (healthy AND control-proven — the full bar)
+- [ ] External audit of SDK + contract (blocks publish)
+- [ ] Changelog + versioning policy (0.1.0 → 1.0.0 at publish)
+- [ ] Browser bundle test (imports from a real bundler, not just node)

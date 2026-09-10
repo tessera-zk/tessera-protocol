@@ -1,0 +1,25 @@
+name: sdk
+on:
+  push:
+    paths: ["sdk/**", ".github/workflows/sdk.yml"]
+  pull_request:
+    paths: ["sdk/**"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: sdk } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node --version
+      - name: Unit tests (no network)
+        run: npm test
+      - name: Example end-to-end (stub fetch, real code path)
+        run: npm run example
+      - name: Publish gate must refuse (pre-audit scaffold)
+        run: node prepublish-check.js && exit 1 || echo "gate refuses as designed"
+      - name: Pack dry-run (files allowlist)
+        run: npm pack --dry-run
+      - name: Secret hygiene gate
+        run: node ../scripts/check_secret_hygiene.js

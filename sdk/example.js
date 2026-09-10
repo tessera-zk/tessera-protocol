@@ -8,11 +8,15 @@ import { isFullyBacked } from "./src/types.js";
 const stubFetch = async (url) => ({
   ok: true,
   json: async () => ({
-    ok: true, status: "healthy", contract: "CBTN433J...",
-    epoch: 3, totalCommitments: "184140", treasury: "189140",
+    // Canned v1 payload mirroring the REAL canonical epoch-0 attestation
+    // (docs/SEP-ATTESTATION-EXAMPLES.md Ex.1) so the demo prints true values.
+    ok: true, status: "healthy",
+    contract: "CDSAQVJCHBDQ6SGXYHXBIAWPN4BM4BAR6FE3HMBFO6WOTKBGQ7B2MJWZ",
+    epoch: 0, totalCommitments: "184140", treasury: "189140",
     boundTreasury: "189140", liveReserveBalance: "189140", ratioPct: 102.72,
-    rootHash: "28d91750...", treasuryHolder: "GDYNFRF3...",
-    controlProven: true, nonOmissionInCircuit: true,
+    rootHash: "28d91750661fb24465616eb4ef70f381c7863cd970d17f4da840d102264eeff7",
+    treasuryHolder: "GDYNFRF3FHYBX42UHYCWGFJ2MFXHZJIXBLII7TQU5YOM6ICTKZPOMKCP",
+    controlProven: true, nonOmissionInCircuit: false,
     boundLedger: 4490585, timestamp: 1788510000, tx: "https://...",
     _fetchedFrom: url,
   }),
