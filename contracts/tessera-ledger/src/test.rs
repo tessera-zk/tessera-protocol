@@ -687,6 +687,28 @@ fn unified_wrong_signal_count_is_rejected() {
     client.submit_unified_attestation(&proof, &signals); // must panic #2
 }
 
+/// LIVE FINDING #61 (testnet 2026-09-10): after a signed (non-omission)
+/// Latest is stored, a risk submit is rejected with `WeakAttestationDowngrade`
+/// (#20) — the contract never lets a weaker root overwrite a stronger bound
+/// root, even though the risk proof itself is valid and backed. Sequencing
+/// consequence: submit risk BEFORE signed if both are wanted on one instance.
+#[test]
+#[should_panic(expected = "Error(Contract, #20)")]
+fn risk_after_signed_latest_is_rejected_as_downgrade() {
+    let env = Env::default();
+    // Covers both fixtures: signed declares 30000, risk declares 118800.
+    let (client, _h) = setup(&env, RISK_RESERVES);
+    register_all_keys(&env, &client);
+
+    let proof = BytesN::from_array(&env, &ifx::SIGNED_SOLVENCY_PROOF);
+    let signals = public_vec(&env, &ifx::SIGNED_SOLVENCY_PUBLIC);
+    client.submit_signed_attestation(&proof, &signals); // stronger Latest stored
+
+    let rproof = BytesN::from_array(&env, &rfx::RISK_SOLVENCY_PROOF);
+    let rsignals = public_vec(&env, &rfx::RISK_SOLVENCY_PUBLIC);
+    client.submit_risk_attestation(&rproof, &rsignals); // must panic #20
+}
+
 // ===== UPGRADE 2: MULTI-ASSET / MULTI-HOLDER RESERVES =====
 
 /// Mint `amount` of a fresh SAC to `holder`; return the token address.
