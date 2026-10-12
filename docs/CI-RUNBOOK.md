@@ -8,6 +8,8 @@ Workflows (all in `.github/workflows/`):
 | `contract.yml` | contracts changes | `cargo test -p tessera-ledger` (25 tests) + assert oracle-spike stays off-build |
 | `frontend.yml` | frontend changes | `tsc --noEmit` + secret-hygiene gate |
 | `docs.yml` | docs/md changes | cross-link check + forbid `NEXT_PUBLIC_*SECRET` in docs |
+| `sdk.yml` | sdk changes | `npm test` + example + publish-gate refusal + pack dry-run + hygiene |
+| `contributor.yml` | every PR + gate-file pushes | contributor gate: `Closes #n`, branch/commit/DCO lint, forbidden paths, evidence + honesty checklist, secret hygiene; self-tests the gate via `check_contributor.test.js` |
 
 Depth-10 rule: CI never downloads the 2.3GB 2^21 ptau. Full depth-10 runs
 need `TESSERA_RUN_DEPTH10=1` + a mirrored ptau on a provisioned host
