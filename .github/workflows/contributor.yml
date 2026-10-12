@@ -1,0 +1,27 @@
+name: contributor
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+    paths: ["scripts/check_contributor*", ".github/workflows/contributor.yml", "CONTRIBUTING.md", ".github/PULL_REQUEST_TEMPLATE.md"]
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Unit-test the gate itself (fixtures must pass)
+        run: node --test scripts/check_contributor.test.js
+      - name: Contributor hygiene gate (Closes-#, branch, commits, DCO, paths, checklist, secrets)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/check_contributor.js
+      - name: Secret hygiene gate (repo-wide, defense in depth)
+        run: node scripts/check_secret_hygiene.js
