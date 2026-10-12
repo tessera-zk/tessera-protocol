@@ -19,10 +19,11 @@ passing test, or a NOT-YET tag.
 
 ## Checks (also run in CI)
 
-- `cd contracts && cargo test -p tessera-ledger` (25 tests).
+- `cd contracts && cargo test -p tessera-ledger` (62 tests).
 - Frontend: `npx tsc --noEmit` + `node scripts/check_secret_hygiene.js`.
 - Circuits touched: compile the changed template (no ptau in CI).
 - Docs touched: docs link check must pass.
+- Contributor gate (`contributor.yml`, closes #128): `node --test scripts/check_contributor.test.js` + `node scripts/check_contributor.js` — enforces `Closes #n`, branch `feat|fix|chore|docs|test/<slug>-<issue>`, commit prefixes `feat|fix|chore|docs|test|ci[(scope)]: …`, DCO `Signed-off-by` (`git commit -s`), no forbidden paths (`.env.local`, `build/`, `ptau/`, `target/`, `.next/`, `*.zkey`/`*.ptau`), ≥1 evidence box + all 5 honesty boxes ticked, no `NEXT_PUBLIC_*SECRET` in changed docs/app.
 
 ## Honesty rules
 
