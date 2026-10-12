@@ -197,20 +197,37 @@ function getPrContext(opts) {
       throw new Error(`cannot fetch PR via gh (${e.message}); pass --pr-body-file/--branch/--commits-file/--files-file`);
     }
   }
-  // Push / local fallback: derive from git.
+  // Push / local fallback: derive from git. On push to main, base..HEAD is
+  // empty (HEAD == base), so prefer the event's before/after range (#130).
   const branch = sh(`git rev-parse --abbrev-ref HEAD || true`);
+  const eventBefore = process.env.GITHUB_EVENT_BEFORE || "";
+  const eventAfter = process.env.GITHUB_EVENT_AFTER || process.env.GITHUB_SHA || "";
   const base = opts.base || process.env.GITHUB_BASE_REF || "origin/main";
+  const pushRange =
+    event === "push" && eventBefore && eventAfter && !/^0+$/.test(eventBefore)
+      ? `${eventBefore}..${eventAfter}`
+      : `${base}..HEAD`;
   let subjects = [];
   let files = [];
   try {
-    subjects = sh(`git log --format=%s ${base}..HEAD 2>/dev/null || git log -5 --format=%s`).split("\n").filter(Boolean);
+    const out = sh(`git log --format=%s ${pushRange} 2>/dev/null || true`);
+    subjects = out ? out.split("\n").filter(Boolean) : [];
+    if (subjects.length === 0) {
+      subjects = sh(`git log -5 --format=%s`).split("\n").filter(Boolean);
+    }
   } catch { subjects = []; }
   try {
-    files = sh(`git diff --name-only ${base}...HEAD 2>/dev/null || git diff --name-only HEAD~3..HEAD`).split("\n").filter(Boolean);
+    const out = sh(`git diff --name-only ${pushRange.replace("..", "...")} 2>/dev/null || true`);
+    files = out ? out.split("\n").filter(Boolean) : [];
+    if (files.length === 0 && subjects.length > 0) {
+      files = sh(`git diff --name-only HEAD~3..HEAD 2>/dev/null || true`).split("\n").filter(Boolean);
+    }
   } catch { files = []; }
   let bodies = [];
   try {
-    bodies = sh(`git log --format=%B%x1e ${base}..HEAD 2>/dev/null || git log -5 --format=%B%x1e`).split("\x1e");
+    const out = sh(`git log --format=%B%x1e ${pushRange} 2>/dev/null || true`);
+    bodies = out ? out.split("\x1e") : subjects;
+    if (bodies.length === 0) bodies = subjects;
   } catch { bodies = subjects; }
   return {
     body: "",
@@ -255,7 +272,8 @@ function main() {
   if (b.ok) console.log(`ok 2 - branch '${ctx.branch}' naming OK`);
   else failures.push(`2 - branch '${ctx.branch}': ${b.detail}`);
 
-  // 3+4. Commits.
+  // 3+4. Commits (DCO enforced on PRs; on push the PR gate already enforced
+  // it, so push mode checks prefixes only and reports DCO as info — #130).
   if (ctx.commits.length === 0) {
     failures.push("3 - no commits found to lint (fetch-depth must be 0 in CI)");
   } else {
@@ -263,11 +281,14 @@ function main() {
     for (const c of ctx.commits) {
       const r = checkCommitLine(c.subject || "");
       if (!(r.ok || r.skipped)) { badPrefix++; failures.push(`3 - commit prefix: ${(c.subject || "").slice(0, 100)}`); break; }
-      const full = `${c.subject || ""}\n${c.body || ""}`;
-      if (!r.merge && !checkDco(full)) { badDco++; failures.push(`4 - DCO sign-off missing in: ${(c.subject || "").slice(0, 100)} (add \`git commit -s\`)`); break; }
+      if (!isPush) {
+        const full = `${c.subject || ""}\n${c.body || ""}`;
+        if (!r.merge && !checkDco(full)) { badDco++; failures.push(`4 - DCO sign-off missing in: ${(c.subject || "").slice(0, 100)} (add \`git commit -s\`)`); break; }
+      }
     }
     if (badPrefix === 0) console.log(`ok 3 - ${ctx.commits.length} commit prefix(es) OK`);
-    if (badDco === 0) console.log(`ok 4 - DCO sign-off OK (${ctx.commits.length} commit(s))`);
+    if (!isPush && badDco === 0) console.log(`ok 4 - DCO sign-off OK (${ctx.commits.length} commit(s))`);
+    if (isPush) console.log(`info 4 - DCO enforced on PRs (push mode prefix-only)`);
   }
 
   // 5. Forbidden paths.
